@@ -7,6 +7,7 @@
 #include <QNetworkReply>
 #include <QMediaPlayer>
 #include <QAudioOutput>
+#include <QFile>
 
 class PodcastEngine : public QObject {
     Q_OBJECT
