@@ -41,24 +41,25 @@ Item {
                         text: "Subscriptions"
                         color: "#ffffff"
                         font.bold: true
-                        font.pixelSize: 20
+                        font.pixelSize: 22
                     }
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Swipe right for Player ➔"
-                        color: "#666666"
-                        font.pixelSize: 11
+                        color: "#00d2ff"
+                        font.bold: true
+                        font.pixelSize: 12
                     }
 
                     Repeater {
                         model: engine.subscriptions
                         delegate: Rectangle {
                             width: subsCol.width
-                            height: 60
-                            color: "#18181c"
-                            radius: 10
-                            border.color: "#333338"
+                            height: 64
+                            color: "#181822"
+                            radius: 12
+                            border.color: "#00d2ff"
                             border.width: 1
 
                             MouseArea {
@@ -78,22 +79,34 @@ Item {
                                 text: modelData.title
                                 color: "#ffffff"
                                 font.bold: true
-                                font.pixelSize: 14
-                                width: 160
+                                font.pixelSize: 15
+                                width: 150
                                 elide: Text.ElideRight
                             }
 
-                            Button {
+                            Rectangle {
                                 anchors.right: parent.right
                                 anchors.rightMargin: 8
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 36
-                                height: 36
-                                text: "✕"
-                                palette.buttonText: "#ff4444"
-                                onClicked: {
-                                    engine.buzz(35);
-                                    engine.unsubscribe(modelData.feedUrl);
+                                width: 44
+                                height: 44
+                                radius: 8
+                                color: "#441111"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "✕"
+                                    color: "#ff4444"
+                                    font.bold: true
+                                    font.pixelSize: 18
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        engine.buzz(40);
+                                        engine.unsubscribe(modelData.feedUrl);
+                                    }
                                 }
                             }
                         }
@@ -104,44 +117,48 @@ Item {
         }
 
         // ==========================================
-        // SCREEN 1: NOW PLAYING (HOME)
+        // SCREEN 1: NOW PLAYING (HOME - FULL WATCHFACE)
         // ==========================================
         Item {
             Column {
                 anchors.fill: parent
-                anchors.margins: 35
-                spacing: 10
+                anchors.margins: 25
+                spacing: 8
 
+                // Header
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: "Now Playing"
-                    color: "#8e44ad"
-                    font.bold: true
-                    font.pixelSize: 18
-                }
-
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: engine.currentTrackTitle.length > 0 ? engine.currentTrackTitle : "No episode loaded"
-                    color: "#ffffff"
+                    text: "NOW PLAYING"
+                    color: "#00d2ff"
                     font.bold: true
                     font.pixelSize: 14
-                    width: parent.width
+                }
+
+                // Giant Track Title
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: engine.currentTrackTitle.length > 0 ? engine.currentTrackTitle : "Ready to Play"
+                    color: "#ffffff"
+                    font.bold: true
+                    font.pixelSize: 18
+                    width: parent.width - 20
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
                     elide: Text.ElideRight
                 }
 
+                // Full-Width Progress Slider
                 Slider {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width - 20
+                    width: parent.width
                     from: 0
                     to: Math.max(1, engine.duration)
                     value: engine.position
                     onMoved: engine.seek(value)
                 }
 
+                // Bold Time Readout
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     function fmt(ms) {
@@ -150,49 +167,68 @@ Item {
                         return m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
                     }
                     text: fmt(engine.position) + " / " + fmt(engine.duration)
-                    color: "#888888"
+                    color: "#00ff66"
                     font.family: "Monospace"
-                    font.pixelSize: 12
+                    font.bold: true
+                    font.pixelSize: 15
                 }
 
-                // Transport Controls
-                Row {
+                Item { width: 1; height: 4 }
+
+                // FULL-WIDTH CURVED ACTION COCKPIT (Zero Gaps, Fills Bottom)
+                Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 12
+                    width: parent.width + 10
+                    height: 80
+                    radius: 16
+                    color: "#14141c"
+                    border.color: "#282836"
+                    border.width: 1
 
-                    Rectangle {
-                        width: 58; height: 48; radius: 8
-                        color: "#222228"
-                        Text { anchors.centerIn: parent; text: "-15s"; color: "#fff"; font.bold: true; font.pixelSize: 13 }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: { engine.buzz(20); engine.skip(-15); }
-                        }
-                    }
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 8
 
-                    Rectangle {
-                        width: 86; height: 48; radius: 8
-                        color: "#00ff66"
-                        Text {
-                            anchors.centerIn: parent
-                            text: engine.playing ? "⏸ PAUSE" : "▶ PLAY"
-                            color: "#000000"
-                            font.bold: true
-                            font.pixelSize: 14
+                        // -15s Button
+                        Rectangle {
+                            width: 68; height: 62; radius: 10
+                            color: btnMinus.pressed ? "#444455" : "#222230"
+                            Text { anchors.centerIn: parent; text: "-15s"; color: "#ffffff"; font.bold: true; font.pixelSize: 16 }
+                            MouseArea {
+                                id: btnMinus
+                                anchors.fill: parent
+                                onClicked: { engine.buzz(25); engine.skip(-15); }
+                            }
                         }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: { engine.buzz(35); engine.togglePlayPause(); }
-                        }
-                    }
 
-                    Rectangle {
-                        width: 58; height: 48; radius: 8
-                        color: "#222228"
-                        Text { anchors.centerIn: parent; text: "+30s"; color: "#fff"; font.bold: true; font.pixelSize: 13 }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: { engine.buzz(20); engine.skip(30); }
+                        // Massive Green Play/Pause
+                        Rectangle {
+                            width: 120; height: 62; radius: 12
+                            color: btnPlay.pressed ? "#1ea852" : "#00ff66"
+                            Text {
+                                anchors.centerIn: parent
+                                text: engine.playing ? "⏸ PAUSE" : "▶ PLAY"
+                                color: "#000000"
+                                font.bold: true
+                                font.pixelSize: 18
+                            }
+                            MouseArea {
+                                id: btnPlay
+                                anchors.fill: parent
+                                onClicked: { engine.buzz(45); engine.togglePlayPause(); }
+                            }
+                        }
+
+                        // +30s Button
+                        Rectangle {
+                            width: 68; height: 62; radius: 10
+                            color: btnPlus.pressed ? "#444455" : "#222230"
+                            Text { anchors.centerIn: parent; text: "+30s"; color: "#ffffff"; font.bold: true; font.pixelSize: 16 }
+                            MouseArea {
+                                id: btnPlus
+                                anchors.fill: parent
+                                onClicked: { engine.buzz(25); engine.skip(30); }
+                            }
                         }
                     }
                 }
@@ -220,14 +256,14 @@ Item {
                         text: "Add Podcasts"
                         color: "#ffffff"
                         font.bold: true
-                        font.pixelSize: 20
+                        font.pixelSize: 22
                     }
 
-                    // Solid Cyan with Bold Black Text
+                    // MASSIVE SOLID CYAN SEARCH BAR (Black Text)
                     Rectangle {
                         width: parent.width
-                        height: 54
-                        radius: 10
+                        height: 60
+                        radius: 12
                         color: searchBtnMouse.pressed ? "#0099cc" : "#00d2ff"
 
                         Text {
@@ -235,7 +271,7 @@ Item {
                             text: "🔍 TAP TO SEARCH"
                             color: "#000000"
                             font.bold: true
-                            font.pixelSize: 15
+                            font.pixelSize: 17
                         }
 
                         MouseArea {
@@ -250,17 +286,17 @@ Item {
 
                     Text {
                         text: engine.searching ? "Searching Apple Directory..." : (engine.searchResults.length > 0 ? "RESULTS" : "")
-                        color: "#00d2ff"
+                        color: "#00ff66"
                         font.bold: true
-                        font.pixelSize: 11
+                        font.pixelSize: 13
                     }
 
                     Repeater {
                         model: engine.searchResults
                         delegate: Rectangle {
                             width: searchCol.width
-                            height: 60
-                            color: "#18181c"
+                            height: 64
+                            color: "#181822"
                             radius: 10
 
                             Column {
@@ -273,14 +309,14 @@ Item {
                                     text: modelData.title
                                     color: "#ffffff"
                                     font.bold: true
-                                    font.pixelSize: 13
+                                    font.pixelSize: 14
                                     elide: Text.ElideRight
                                     width: parent.width
                                 }
                                 Text {
                                     text: modelData.artist
-                                    color: "#888888"
-                                    font.pixelSize: 10
+                                    color: "#00d2ff"
+                                    font.pixelSize: 11
                                     elide: Text.ElideRight
                                     width: parent.width
                                 }
@@ -290,8 +326,8 @@ Item {
                                 anchors.right: parent.right
                                 anchors.rightMargin: 8
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 68
-                                height: 38
+                                width: 72
+                                height: 42
                                 radius: 8
                                 color: "#00ff66"
 
@@ -300,7 +336,7 @@ Item {
                                     text: "+ SUB"
                                     color: "#000000"
                                     font.bold: true
-                                    font.pixelSize: 12
+                                    font.pixelSize: 14
                                 }
 
                                 MouseArea {
@@ -308,7 +344,7 @@ Item {
                                     onClicked: {
                                         engine.buzz(45);
                                         engine.subscribe(modelData.title, modelData.feedUrl);
-                                        swipeView.currentIndex = 0; // Jump to Subscriptions
+                                        swipeView.currentIndex = 0;
                                     }
                                 }
                             }
@@ -320,7 +356,7 @@ Item {
         }
     }
 
-    // EPISODE LIST OVERLAY (Native Item overlay, 100% bug-free)
+    // EPISODE LIST OVERLAY (Native Item overlay)
     Rectangle {
         id: episodeOverlay
         anchors.fill: parent
@@ -345,16 +381,16 @@ Item {
                 Row {
                     spacing: 8
                     Rectangle {
-                        width: 70; height: 34; radius: 6; color: "#222"
-                        Text { anchors.centerIn: parent; text: "← Close"; color: "#fff"; font.bold: true; font.pixelSize: 12 }
+                        width: 75; height: 36; radius: 8; color: "#222230"
+                        Text { anchors.centerIn: parent; text: "← Close"; color: "#00d2ff"; font.bold: true; font.pixelSize: 13 }
                         MouseArea { anchors.fill: parent; onClicked: episodeOverlay.close() }
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.currentShowTitle
-                        color: "#8e44ad"
+                        color: "#ffffff"
                         font.bold: true
-                        font.pixelSize: 13
+                        font.pixelSize: 14
                         width: 140
                         elide: Text.ElideRight
                     }
@@ -363,22 +399,22 @@ Item {
                 // Download Progress Banner
                 Rectangle {
                     width: parent.width
-                    height: 22
+                    height: 24
                     color: "#222228"
-                    radius: 4
+                    radius: 6
                     visible: engine.downloading
 
                     Rectangle {
                         height: parent.height
                         width: parent.width * (engine.downloadProgress / 100.0)
                         color: "#00ff66"
-                        radius: 4
+                        radius: 6
                     }
                     Text {
                         anchors.centerIn: parent
                         text: "Downloading " + engine.downloadProgress + "%"
                         color: "#000000"
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         font.bold: true
                     }
                 }
@@ -387,9 +423,10 @@ Item {
                     model: engine.episodes
                     delegate: Rectangle {
                         width: epCol.width
-                        height: 60
-                        color: "#16161a"
-                        radius: 8
+                        height: 64
+                        color: "#181822"
+                        radius: 10
+                        border.color: modelData.isDownloaded ? "#00ff66" : "#2a2a36"
 
                         Column {
                             anchors.left: parent.left
@@ -401,14 +438,14 @@ Item {
                                 text: modelData.title
                                 color: "#ffffff"
                                 font.bold: true
-                                font.pixelSize: 12
+                                font.pixelSize: 13
                                 elide: Text.ElideRight
                                 width: parent.width
                             }
                             Text {
                                 text: modelData.isDownloaded ? "On Watch" : "Cloud"
-                                color: modelData.isDownloaded ? "#00ff66" : "#888888"
-                                font.pixelSize: 10
+                                color: modelData.isDownloaded ? "#00ff66" : "#00d2ff"
+                                font.pixelSize: 11
                             }
                         }
 
@@ -416,17 +453,17 @@ Item {
                             anchors.right: parent.right
                             anchors.rightMargin: 6
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 66
-                            height: 38
+                            width: 72
+                            height: 42
                             radius: 8
-                            color: modelData.isDownloaded ? "#00ff66" : "#2a2a32"
+                            color: modelData.isDownloaded ? "#00ff66" : "#2a2a38"
 
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData.isDownloaded ? "▶ PLAY" : "⬇ GET"
                                 color: modelData.isDownloaded ? "#000000" : "#ffffff"
                                 font.bold: true
-                                font.pixelSize: 12
+                                font.pixelSize: 13
                             }
 
                             MouseArea {
@@ -457,7 +494,7 @@ Item {
         onAccepted: function(queryText) {
             if (queryText.trim().length > 0) {
                 engine.search(queryText.trim());
-                swipeView.currentIndex = 2; // Jump to Search results
+                swipeView.currentIndex = 2; // Jump to Search results!
             }
         }
     }
