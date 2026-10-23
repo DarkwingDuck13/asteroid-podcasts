@@ -125,12 +125,11 @@ void PodcastEngine::unsubscribe(const QString &feedUrl) {
     }
 }
 
-// OFFLINE-FIRST EPISODE LOADING
 void PodcastEngine::loadEpisodes(const QString &showTitle, const QString &feedUrl) {
     m_currentShowLoading = showTitle;
     m_episodes.clear();
 
-    // 1. Scan local disk first! (Instantly shows offline episodes)
+    // 1. OFFLINE SCAN: Instantly load files already on disk
     QString showDir = m_storagePath + "/" + sanitizeFilename(showTitle);
     QDir dir(showDir);
     QFileInfoList fileList = dir.entryInfoList(QStringList() << "*.mp3" << "*.m4a", QDir::Files, QDir::Time);
@@ -145,7 +144,7 @@ void PodcastEngine::loadEpisodes(const QString &showTitle, const QString &feedUr
     }
     emit episodesChanged();
 
-    // 2. Try fetching the online RSS feed if network is available
+    // 2. Fetch fresh online RSS feed if network is available
     m_isLoadingEpisodes = true;
     emit loadingEpisodesChanged();
 
@@ -198,7 +197,7 @@ void PodcastEngine::onFeedFinished() {
             m_episodes = freshEpisodes;
         }
     } else {
-        qDebug() << "Network offline or failed, keeping local episodes intact:" << reply->errorString();
+        qDebug() << "Network offline, keeping local files visible:" << reply->errorString();
     }
 
     reply->deleteLater();
@@ -256,7 +255,6 @@ void PodcastEngine::onDownloadFinished() {
     emit downloadingChanged();
     emit downloadProgressChanged();
 
-    // Refresh downloaded state in current list
     for (int i = 0; i < m_episodes.size(); ++i) {
         QVariantMap ep = m_episodes[i].toMap();
         ep["isDownloaded"] = QFile::exists(episodeFilePath(m_currentShowLoading, ep["title"].toString()));
