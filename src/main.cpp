@@ -8,8 +8,10 @@ int main(int argc, char *argv[]) {
     app.setApplicationName("asteroid-podcasts");
 
     QQuickView view;
-    PodcastEngine engine;
+    // Set default canvas to pure OLED black (no more flashlights!)
+    view.setColor(QColor("#000000"));
 
+    PodcastEngine engine;
     view.rootContext()->setContextProperty("engine", &engine);
     view.setSource(QUrl("qrc:/qml/main.qml"));
     view.setResizeMode(QQuickView::SizeRootObjectToView);
