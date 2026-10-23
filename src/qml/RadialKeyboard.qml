@@ -49,7 +49,7 @@ Item {
     }
 
     // ==========================================
-    // 1. THE ROTARY LETTER RIM (BEZEL)
+    // 1. ROTARY LETTER RIM
     // ==========================================
     Item {
         id: dial
@@ -64,8 +64,8 @@ Item {
         Repeater {
             model: keyboardRoot.currentChars().length
             delegate: Item {
-                width: 34
-                height: 34
+                width: 36
+                height: 36
                 
                 property real angleDeg: (index / keyboardRoot.currentChars().length) * 360.0 - 90.0
                 property real angleRad: angleDeg * (Math.PI / 180.0)
@@ -79,7 +79,7 @@ Item {
                     text: parent.ch
                     color: (keyboardRoot.activeHoverChar === parent.ch) ? "#00ff66" : "#ffffff"
                     font.bold: true
-                    font.pixelSize: (keyboardRoot.activeHoverChar === parent.ch) ? 32 : 16
+                    font.pixelSize: (keyboardRoot.activeHoverChar === parent.ch) ? 34 : 17
                     font.family: "Monospace"
 
                     Behavior on font.pixelSize {
@@ -91,20 +91,19 @@ Item {
     }
 
     // ==========================================
-    // 2. RIM TOUCH SENSOR (ONLY ACTIVE ON THE RING!)
+    // 2. RIM TOUCH SENSOR (Z=1, NEVER INTERFERES WITH BUTTONS)
     // ==========================================
-    // Placed BEFORE the center hub in Z-order so it CANNOT steal button taps!
     MouseArea {
         id: rimTouch
         anchors.fill: parent
-        z: 1 // Sits below the center buttons
+        z: 1
 
         function updateHover(mouse) {
             var dx = mouse.x - 200;
             var dy = mouse.y - 200;
             var dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Ring touch zone strictly between 135px and 205px
+            // Ring touch zone strictly on outer rim (135px to 205px)
             if (dist >= 135 && dist <= 205) {
                 keyboardRoot.isScrubbing = true;
                 
@@ -117,7 +116,7 @@ Item {
 
                 if (newChar !== keyboardRoot.activeHoverChar) {
                     keyboardRoot.activeHoverChar = newChar;
-                    keyboardRoot.hapticPulse(25); // Tactile 25ms tick
+                    keyboardRoot.hapticPulse(25); // Stronger 25ms tick
                 }
             } else {
                 keyboardRoot.isScrubbing = false;
@@ -143,7 +142,7 @@ Item {
     }
 
     // ==========================================
-    // 3. CURVED CENTER CONTROL HUB
+    // 3. CURVED CENTER CONTROL HUB (Z=10, 100% TOUCH PRIORITY)
     // ==========================================
     Rectangle {
         id: centerHub
@@ -151,21 +150,24 @@ Item {
         height: 270
         radius: 135
         anchors.centerIn: parent
-        color: "#0f0f13"
+        color: "#0d0d12"
         border.color: "#00d2ff"
         border.width: 2
         clip: true
-        z: 10 // Guaranteed top priority over the touch ring!
+        z: 10
 
+        // TOP: Text preview & Lens
         Column {
-            anchors.fill: parent
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width
             spacing: 0
 
-            // Top Header: Active Bank + Page Dots
+            // Header: Dial Bank + Page Dots
             Rectangle {
                 width: parent.width
                 height: 38
-                color: "#181822"
+                color: "#181824"
 
                 Row {
                     anchors.centerIn: parent
@@ -205,129 +207,133 @@ Item {
                     width: parent.width - 24
                     text: keyboardRoot.text.length > 0 ? keyboardRoot.text : "TOUCH RIM TO TYPE"
                     color: keyboardRoot.text.length > 0 ? "#00ff66" : "#00d2ff"
-                    font.pixelSize: 17
+                    font.pixelSize: 18
                     font.bold: true
                     elide: Text.ElideLeft
                     horizontalAlignment: Text.AlignHCenter
                 }
             }
 
-            // High-Contrast Lens Bubble
+            // The Magnifier Lens
             Rectangle {
                 width: parent.width
                 height: 44
-                color: keyboardRoot.isScrubbing ? "#2c123a" : "#0f0f13"
+                color: keyboardRoot.isScrubbing ? "#2c123a" : "#0d0d12"
 
                 Text {
                     anchors.centerIn: parent
                     text: keyboardRoot.activeHoverChar.length > 0 ? keyboardRoot.activeHoverChar : "◄ SWIPE HERE TO FLIP ►"
                     color: keyboardRoot.isScrubbing ? "#00ff66" : "#ffffff"
                     font.bold: true
-                    font.pixelSize: keyboardRoot.isScrubbing ? 36 : 11
+                    font.pixelSize: keyboardRoot.isScrubbing ? 38 : 12
                 }
             }
+        }
 
-            // SOLID CURVED BUTTON PANEL (Zero Gaps, 100% Touch Priority)
-            Rectangle {
-                width: parent.width
-                height: 146
-                color: "#16161e"
+        // BOTTOM: CURVED BUTTON COCKPIT (Hugs the bottom arc flush!)
+        Rectangle {
+            anchors.bottom: parent.bottom
+            width: parent.width
+            height: 146
+            color: "#121218"
 
-                Column {
-                    anchors.fill: parent
+            Column {
+                anchors.fill: parent
 
-                    // Row 1: Backspace & Space
-                    Row {
-                        width: parent.width
-                        height: 64
+                // Row 1: Backspace & Space (Height 64px)
+                Row {
+                    width: parent.width
+                    height: 64
 
-                        // Giant Backspace Button
-                        Rectangle {
-                            width: parent.width / 2
-                            height: parent.height
-                            color: delMouse.pressed ? "#991111" : "#551111"
-                            border.color: "#772222"
-                            border.width: 1
+                    // Giant Backspace Button
+                    Rectangle {
+                        width: parent.width / 2
+                        height: parent.height
+                        color: delMouse.pressed ? "#991111" : "#551111"
+                        border.color: "#772222"
+                        border.width: 1
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: "⌫ DEL"
-                                color: "#ffffff"
-                                font.bold: true
-                                font.pixelSize: 18
-                            }
-
-                            MouseArea {
-                                id: delMouse
-                                anchors.fill: parent
-                                z: 20
-                                onClicked: {
-                                    keyboardRoot.hapticPulse(35);
-                                    if (keyboardRoot.text.length > 0) {
-                                        keyboardRoot.text = keyboardRoot.text.substring(0, keyboardRoot.text.length - 1);
-                                    }
-                                }
-                            }
+                        Text {
+                            anchors.centerIn: parent
+                            text: "⌫ DEL"
+                            color: "#ffffff"
+                            font.bold: true
+                            font.pixelSize: 19
                         }
 
-                        // Giant Space Button
-                        Rectangle {
-                            width: parent.width / 2
-                            height: parent.height
-                            color: spaceMouse.pressed ? "#444455" : "#2a2a38"
-                            border.color: "#3a3a4c"
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "␣ SPACE"
-                                color: "#ffffff"
-                                font.bold: true
-                                font.pixelSize: 18
-                            }
-
-                            MouseArea {
-                                id: spaceMouse
-                                anchors.fill: parent
-                                z: 20
-                                onClicked: {
-                                    keyboardRoot.hapticPulse(25);
-                                    keyboardRoot.text += " ";
+                        MouseArea {
+                            id: delMouse
+                            anchors.fill: parent
+                            z: 20
+                            onClicked: {
+                                keyboardRoot.hapticPulse(35);
+                                if (keyboardRoot.text.length > 0) {
+                                    keyboardRoot.text = keyboardRoot.text.substring(0, keyboardRoot.text.length - 1);
                                 }
                             }
                         }
                     }
 
-                    // Row 2: Giant Green SEARCH Bar
+                    // Giant Space Button
                     Rectangle {
-                        width: parent.width
-                        height: 82
-                        color: enterMouse.pressed ? "#1ea852" : "#00ff66"
+                        width: parent.width / 2
+                        height: parent.height
+                        color: spaceMouse.pressed ? "#444455" : "#242432"
+                        border.color: "#343444"
+                        border.width: 1
 
                         Text {
                             anchors.centerIn: parent
-                            text: "↵ SEARCH"
-                            color: "#000000"
+                            text: "␣ SPACE"
+                            color: "#ffffff"
                             font.bold: true
-                            font.pixelSize: 20
+                            font.pixelSize: 19
                         }
 
                         MouseArea {
-                            id: enterMouse
+                            id: spaceMouse
                             anchors.fill: parent
                             z: 20
                             onClicked: {
-                                keyboardRoot.hapticPulse(50);
-                                keyboardRoot.accepted(keyboardRoot.text);
-                                keyboardRoot.close();
+                                keyboardRoot.hapticPulse(25);
+                                keyboardRoot.text += " ";
                             }
+                        }
+                    }
+                }
+
+                // Row 2: Giant Green SEARCH Bar (Curved bottom corners match centerHub circle!)
+                Rectangle {
+                    width: parent.width
+                    height: 82
+                    radius: 135
+                    color: enterMouse.pressed ? "#1ea852" : "#00ff66"
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: parent.top
+                        anchors.topMargin: 16
+                        text: "↵ SEARCH"
+                        color: "#000000"
+                        font.bold: true
+                        font.pixelSize: 22
+                    }
+
+                    MouseArea {
+                        id: enterMouse
+                        anchors.fill: parent
+                        z: 20
+                        onClicked: {
+                            keyboardRoot.hapticPulse(50);
+                            keyboardRoot.accepted(keyboardRoot.text);
+                            keyboardRoot.close();
                         }
                     }
                 }
             }
         }
 
-        // Swipe Detector (Only over the top half of the hub)
+        // Swipe Detector
         MouseArea {
             id: hubSwipe
             width: parent.width
