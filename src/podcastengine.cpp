@@ -276,3 +276,11 @@ void PodcastEngine::saveSubscriptions() {
         file.write(QJsonDocument(arr).toJson());
     }
 }
+
+void PodcastEngine::buzz(int ms) {
+    QFile file("/sys/class/timed_output/vibrator/enable");
+    if (file.open(QIODevice::WriteOnly)) {
+        file.write(QByteArray::number(ms));
+        file.close();
+    }
+}
