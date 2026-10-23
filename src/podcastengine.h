@@ -14,6 +14,7 @@ class PodcastEngine : public QObject {
     Q_PROPERTY(QVariantList subscriptions READ subscriptions NOTIFY subscriptionsChanged)
     Q_PROPERTY(QVariantList searchResults READ searchResults NOTIFY searchResultsChanged)
     Q_PROPERTY(QVariantList episodes READ episodes NOTIFY episodesChanged)
+    Q_PROPERTY(QVariantList downloadedEpisodes READ downloadedEpisodes NOTIFY downloadedEpisodesChanged)
     Q_PROPERTY(bool searching READ isSearching NOTIFY searchingChanged)
     Q_PROPERTY(bool loadingEpisodes READ isLoadingEpisodes NOTIFY loadingEpisodesChanged)
     Q_PROPERTY(int downloadProgress READ downloadProgress NOTIFY downloadProgressChanged)
@@ -32,6 +33,7 @@ public:
     QVariantList subscriptions() const { return m_subscriptions; }
     QVariantList searchResults() const { return m_searchResults; }
     QVariantList episodes() const { return m_episodes; }
+    QVariantList downloadedEpisodes() const { return m_downloadedEpisodes; }
     bool isSearching() const { return m_isSearching; }
     bool isLoadingEpisodes() const { return m_isLoadingEpisodes; }
     int downloadProgress() const { return m_downloadProgress; }
@@ -48,18 +50,23 @@ public:
     Q_INVOKABLE void loadEpisodes(const QString &showTitle, const QString &feedUrl);
     Q_INVOKABLE void downloadEpisode(const QString &showTitle, const QString &epTitle, const QString &audioUrl);
     Q_INVOKABLE void deleteDownloadedEpisode(const QString &showTitle, const QString &epTitle);
-    Q_INVOKABLE void buzz(int ms = 20);
+    Q_INVOKABLE void refreshDownloads();
     
     // Playback Controls
     Q_INVOKABLE void playEpisode(const QString &showTitle, const QString &epTitle);
+    Q_INVOKABLE void playDirectFile(const QString &filePath, const QString &title);
     Q_INVOKABLE void togglePlayPause();
     Q_INVOKABLE void seek(qint64 pos);
     Q_INVOKABLE void skip(int seconds);
+
+    // Haptics
+    Q_INVOKABLE void buzz(int ms = 25);
 
 signals:
     void subscriptionsChanged();
     void searchResultsChanged();
     void episodesChanged();
+    void downloadedEpisodesChanged();
     void searchingChanged();
     void loadingEpisodesChanged();
     void downloadProgressChanged();
@@ -83,6 +90,7 @@ private:
     QVariantList m_subscriptions;
     QVariantList m_searchResults;
     QVariantList m_episodes;
+    QVariantList m_downloadedEpisodes;
 
     bool m_isSearching = false;
     bool m_isLoadingEpisodes = false;
@@ -93,7 +101,6 @@ private:
     QString m_currentShowLoading;
     QString m_storagePath;
 
-    // Download state
     QNetworkReply *m_currentDownloadReply = nullptr;
     QFile *m_currentDownloadFile = nullptr;
 
