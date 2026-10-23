@@ -48,6 +48,7 @@ public:
     Q_INVOKABLE void loadEpisodes(const QString &showTitle, const QString &feedUrl);
     Q_INVOKABLE void downloadEpisode(const QString &showTitle, const QString &epTitle, const QString &audioUrl);
     Q_INVOKABLE void deleteDownloadedEpisode(const QString &showTitle, const QString &epTitle);
+    Q_INVOKABLE void buzz(int ms = 20);
     
     // Playback Controls
     Q_INVOKABLE void playEpisode(const QString &showTitle, const QString &epTitle);
