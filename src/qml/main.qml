@@ -17,10 +17,8 @@ Item {
     SwipeView {
         id: swipeView
         anchors.fill: parent
-        currentIndex: 1 // Start on Screen 1 (Player / Home)
-        
-        // CRITICAL: Disable screen swiping whenever the keyboard is open!
-        interactive: !radialOsk.visible
+        currentIndex: 1 // Starts on Screen 1 (Player / Home)
+        interactive: !radialOsk.visible // Locks swiping while typing!
 
         // ==========================================
         // SCREEN 0: SUBSCRIPTIONS & EPISODES
@@ -69,7 +67,7 @@ Item {
                                     engine.buzz(25);
                                     root.currentShowTitle = modelData.title;
                                     engine.loadEpisodes(modelData.title, modelData.feedUrl);
-                                    episodePopup.open();
+                                    episodeOverlay.open();
                                 }
                             }
 
@@ -225,7 +223,7 @@ Item {
                         font.pixelSize: 20
                     }
 
-                    // MASSIVE HIGH-CONTRAST SEARCH BUTTON (Solid Cyan with Black Text)
+                    // Solid Cyan with Bold Black Text
                     Rectangle {
                         width: parent.width
                         height: 54
@@ -288,7 +286,6 @@ Item {
                                 }
                             }
 
-                            // Solid Green Subscribe Button
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.rightMargin: 8
@@ -323,15 +320,15 @@ Item {
         }
     }
 
-    // EPISODE LIST MODAL (Opens when you tap a show in Subscriptions)
-    Popup {
-        id: episodePopup
+    // EPISODE LIST OVERLAY (Native Item overlay, 100% bug-free)
+    Rectangle {
+        id: episodeOverlay
         anchors.fill: parent
-        modal: true
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        color: "#000000"
+        visible: false
 
-        background: Rectangle { color: "#000000" }
+        function open() { visible = true; }
+        function close() { visible = false; }
 
         Flickable {
             anchors.fill: parent
@@ -350,7 +347,7 @@ Item {
                     Rectangle {
                         width: 70; height: 34; radius: 6; color: "#222"
                         Text { anchors.centerIn: parent; text: "← Close"; color: "#fff"; font.bold: true; font.pixelSize: 12 }
-                        MouseArea { anchors.fill: parent; onClicked: episodePopup.close() }
+                        MouseArea { anchors.fill: parent; onClicked: episodeOverlay.close() }
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -415,7 +412,6 @@ Item {
                             }
                         }
 
-                        // Play or Download Target
                         Rectangle {
                             anchors.right: parent.right
                             anchors.rightMargin: 6
@@ -439,7 +435,7 @@ Item {
                                     engine.buzz(30);
                                     if (modelData.isDownloaded) {
                                         engine.playEpisode(root.currentShowTitle, modelData.title);
-                                        episodePopup.close();
+                                        episodeOverlay.close();
                                         swipeView.currentIndex = 1; // Jump to Player!
                                     } else {
                                         engine.downloadEpisode(root.currentShowTitle, modelData.title, modelData.audioUrl);
@@ -454,15 +450,14 @@ Item {
         }
     }
 
-    // ==========================================
-    // THE FULL-SCREEN RADIAL KEYBOARD OVERLAY
-    // ==========================================
+    // FULL-SCREEN RADIAL KEYBOARD OVERLAY
     RadialKeyboard {
         id: radialOsk
         anchors.fill: parent
-        onAccepted: (queryText) => {
+        onAccepted: function(queryText) {
             if (queryText.trim().length > 0) {
                 engine.search(queryText.trim());
+                swipeView.currentIndex = 2; // Jump to Search results
             }
         }
     }
