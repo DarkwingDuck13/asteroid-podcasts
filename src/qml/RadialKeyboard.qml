@@ -8,7 +8,6 @@ Item {
     visible: false
 
     property string text: ""
-    // Mode: -1 = CAPS, 0 = lowercase (Home), 1 = Numbers, 2 = Symbols
     property int currentMode: 0
     property string activeHoverChar: ""
     property bool isScrubbing: false
@@ -50,7 +49,7 @@ Item {
     }
 
     // ==========================================
-    // 1. OUTER RIM (DIAL)
+    // 1. THE ROTARY LETTER RIM (BEZEL)
     // ==========================================
     Item {
         id: dial
@@ -80,11 +79,11 @@ Item {
                     text: parent.ch
                     color: (keyboardRoot.activeHoverChar === parent.ch) ? "#00ff66" : "#ffffff"
                     font.bold: true
-                    font.pixelSize: (keyboardRoot.activeHoverChar === parent.ch) ? 30 : 16
+                    font.pixelSize: (keyboardRoot.activeHoverChar === parent.ch) ? 32 : 16
                     font.family: "Monospace"
 
                     Behavior on font.pixelSize {
-                        NumberAnimation { duration: 80 }
+                        NumberAnimation { duration: 70 }
                     }
                 }
             }
@@ -92,7 +91,59 @@ Item {
     }
 
     // ==========================================
-    // 2. CENTER CONTROL PANEL
+    // 2. RIM TOUCH SENSOR (ONLY ACTIVE ON THE RING!)
+    // ==========================================
+    // Placed BEFORE the center hub in Z-order so it CANNOT steal button taps!
+    MouseArea {
+        id: rimTouch
+        anchors.fill: parent
+        z: 1 // Sits below the center buttons
+
+        function updateHover(mouse) {
+            var dx = mouse.x - 200;
+            var dy = mouse.y - 200;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+
+            // Ring touch zone strictly between 135px and 205px
+            if (dist >= 135 && dist <= 205) {
+                keyboardRoot.isScrubbing = true;
+                
+                var angle = Math.atan2(dy, dx) * (180.0 / Math.PI) + 90.0;
+                if (angle < 0) angle += 360.0;
+
+                var chars = keyboardRoot.currentChars();
+                var index = Math.floor((angle / 360.0) * chars.length) % chars.length;
+                var newChar = chars[index];
+
+                if (newChar !== keyboardRoot.activeHoverChar) {
+                    keyboardRoot.activeHoverChar = newChar;
+                    keyboardRoot.hapticPulse(25); // Tactile 25ms tick
+                }
+            } else {
+                keyboardRoot.isScrubbing = false;
+                keyboardRoot.activeHoverChar = "";
+            }
+        }
+
+        onPressed: function(mouse) { updateHover(mouse); }
+        onPositionChanged: function(mouse) { updateHover(mouse); }
+        onReleased: function(mouse) {
+            if (keyboardRoot.isScrubbing && keyboardRoot.activeHoverChar.length > 0) {
+                keyboardRoot.hapticPulse(35);
+                keyboardRoot.text += keyboardRoot.activeHoverChar;
+                
+                if (keyboardRoot.currentMode === -1) {
+                    keyboardRoot.currentMode = 0;
+                    dial.rotation += 30;
+                }
+            }
+            keyboardRoot.isScrubbing = false;
+            keyboardRoot.activeHoverChar = "";
+        }
+    }
+
+    // ==========================================
+    // 3. CURVED CENTER CONTROL HUB
     // ==========================================
     Rectangle {
         id: centerHub
@@ -100,20 +151,21 @@ Item {
         height: 270
         radius: 135
         anchors.centerIn: parent
-        color: "#111114"
-        border.color: "#2a2a2e"
+        color: "#0f0f13"
+        border.color: "#00d2ff"
         border.width: 2
         clip: true
+        z: 10 // Guaranteed top priority over the touch ring!
 
         Column {
             anchors.fill: parent
             spacing: 0
 
-            // Header: Active Bank Label + Pagination
+            // Top Header: Active Bank + Page Dots
             Rectangle {
                 width: parent.width
-                height: 36
-                color: "#1c1c22"
+                height: 38
+                color: "#181822"
 
                 Row {
                     anchors.centerIn: parent
@@ -123,7 +175,7 @@ Item {
                         text: keyboardRoot.bankNames[keyboardRoot.currentMode + 1]
                         color: "#00d2ff"
                         font.bold: true
-                        font.pixelSize: 11
+                        font.pixelSize: 13
                     }
 
                     Row {
@@ -132,54 +184,54 @@ Item {
                         Repeater {
                             model: 4
                             Rectangle {
-                                width: (index - 1 === keyboardRoot.currentMode) ? 12 : 5
+                                width: (index - 1 === keyboardRoot.currentMode) ? 14 : 5
                                 height: 5
                                 radius: 2.5
-                                color: (index - 1 === keyboardRoot.currentMode) ? "#00d2ff" : "#555555"
+                                color: (index - 1 === keyboardRoot.currentMode) ? "#00ff66" : "#ffffff"
                             }
                         }
                     }
                 }
             }
 
-            // Live Text Output Box
+            // High-Contrast Output Box
             Rectangle {
                 width: parent.width
-                height: 38
-                color: "#08080a"
+                height: 42
+                color: "#000000"
 
                 Text {
                     anchors.centerIn: parent
                     width: parent.width - 24
-                    text: keyboardRoot.text.length > 0 ? keyboardRoot.text : "Tap rim to type..."
-                    color: keyboardRoot.text.length > 0 ? "#ffffff" : "#666666"
-                    font.pixelSize: 16
+                    text: keyboardRoot.text.length > 0 ? keyboardRoot.text : "TOUCH RIM TO TYPE"
+                    color: keyboardRoot.text.length > 0 ? "#00ff66" : "#00d2ff"
+                    font.pixelSize: 17
                     font.bold: true
                     elide: Text.ElideLeft
                     horizontalAlignment: Text.AlignHCenter
                 }
             }
 
-            // The Magnifier Lens
+            // High-Contrast Lens Bubble
             Rectangle {
                 width: parent.width
                 height: 44
-                color: keyboardRoot.isScrubbing ? "#2c123a" : "#111114"
+                color: keyboardRoot.isScrubbing ? "#2c123a" : "#0f0f13"
 
                 Text {
                     anchors.centerIn: parent
-                    text: keyboardRoot.activeHoverChar.length > 0 ? keyboardRoot.activeHoverChar : "◄ Swipe Hub ►"
-                    color: keyboardRoot.isScrubbing ? "#00ff66" : "#444444"
+                    text: keyboardRoot.activeHoverChar.length > 0 ? keyboardRoot.activeHoverChar : "◄ SWIPE HERE TO FLIP ►"
+                    color: keyboardRoot.isScrubbing ? "#00ff66" : "#ffffff"
                     font.bold: true
-                    font.pixelSize: keyboardRoot.isScrubbing ? 34 : 12
+                    font.pixelSize: keyboardRoot.isScrubbing ? 36 : 11
                 }
             }
 
-            // SOLID TOUCH BUTTON PANEL
+            // SOLID CURVED BUTTON PANEL (Zero Gaps, 100% Touch Priority)
             Rectangle {
                 width: parent.width
-                height: 152
-                color: "#16161a"
+                height: 146
+                color: "#16161e"
 
                 Column {
                     anchors.fill: parent
@@ -187,26 +239,28 @@ Item {
                     // Row 1: Backspace & Space
                     Row {
                         width: parent.width
-                        height: 52
+                        height: 64
 
+                        // Giant Backspace Button
                         Rectangle {
                             width: parent.width / 2
                             height: parent.height
-                            color: delMouse.pressed ? "#661111" : "#2a1616"
-                            border.color: "#3a2020"
+                            color: delMouse.pressed ? "#991111" : "#551111"
+                            border.color: "#772222"
                             border.width: 1
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "⌫ DEL"
-                                color: "#ff4444"
+                                color: "#ffffff"
                                 font.bold: true
-                                font.pixelSize: 16
+                                font.pixelSize: 18
                             }
 
                             MouseArea {
                                 id: delMouse
                                 anchors.fill: parent
+                                z: 20
                                 onClicked: {
                                     keyboardRoot.hapticPulse(35);
                                     if (keyboardRoot.text.length > 0) {
@@ -216,11 +270,12 @@ Item {
                             }
                         }
 
+                        // Giant Space Button
                         Rectangle {
                             width: parent.width / 2
                             height: parent.height
-                            color: spaceMouse.pressed ? "#333338" : "#222228"
-                            border.color: "#333338"
+                            color: spaceMouse.pressed ? "#444455" : "#2a2a38"
+                            border.color: "#3a3a4c"
                             border.width: 1
 
                             Text {
@@ -228,12 +283,13 @@ Item {
                                 text: "␣ SPACE"
                                 color: "#ffffff"
                                 font.bold: true
-                                font.pixelSize: 16
+                                font.pixelSize: 18
                             }
 
                             MouseArea {
                                 id: spaceMouse
                                 anchors.fill: parent
+                                z: 20
                                 onClicked: {
                                     keyboardRoot.hapticPulse(25);
                                     keyboardRoot.text += " ";
@@ -245,20 +301,21 @@ Item {
                     // Row 2: Giant Green SEARCH Bar
                     Rectangle {
                         width: parent.width
-                        height: 60
-                        color: enterMouse.pressed ? "#22aa55" : "#00ff66"
+                        height: 82
+                        color: enterMouse.pressed ? "#1ea852" : "#00ff66"
 
                         Text {
                             anchors.centerIn: parent
                             text: "↵ SEARCH"
                             color: "#000000"
                             font.bold: true
-                            font.pixelSize: 18
+                            font.pixelSize: 20
                         }
 
                         MouseArea {
                             id: enterMouse
                             anchors.fill: parent
+                            z: 20
                             onClicked: {
                                 keyboardRoot.hapticPulse(50);
                                 keyboardRoot.accepted(keyboardRoot.text);
@@ -270,13 +327,13 @@ Item {
             }
         }
 
-        // Center Swipe Area (Swapping Character Banks)
+        // Swipe Detector (Only over the top half of the hub)
         MouseArea {
             id: hubSwipe
             width: parent.width
-            height: 118
+            height: 124
             anchors.top: parent.top
-            preventStealing: true
+            z: 15
             property real startX: 0
 
             onPressed: function(mouse) {
@@ -300,55 +357,6 @@ Item {
                     }
                 }
             }
-        }
-    }
-
-    // ==========================================
-    // 3. RADIAL TOUCH TRACKER
-    // ==========================================
-    MouseArea {
-        id: rimTouch
-        anchors.fill: parent
-
-        function updateHover(mouse) {
-            var dx = mouse.x - 200;
-            var dy = mouse.y - 200;
-            var dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist >= 125 && dist <= 210) {
-                keyboardRoot.isScrubbing = true;
-                
-                var angle = Math.atan2(dy, dx) * (180.0 / Math.PI) + 90.0;
-                if (angle < 0) angle += 360.0;
-
-                var chars = keyboardRoot.currentChars();
-                var index = Math.floor((angle / 360.0) * chars.length) % chars.length;
-                var newChar = chars[index];
-
-                if (newChar !== keyboardRoot.activeHoverChar) {
-                    keyboardRoot.activeHoverChar = newChar;
-                    keyboardRoot.hapticPulse(25);
-                }
-            } else {
-                keyboardRoot.isScrubbing = false;
-                keyboardRoot.activeHoverChar = "";
-            }
-        }
-
-        onPressed: function(mouse) { updateHover(mouse); }
-        onPositionChanged: function(mouse) { updateHover(mouse); }
-        onReleased: function(mouse) {
-            if (keyboardRoot.isScrubbing && keyboardRoot.activeHoverChar.length > 0) {
-                keyboardRoot.hapticPulse(35);
-                keyboardRoot.text += keyboardRoot.activeHoverChar;
-                
-                if (keyboardRoot.currentMode === -1) {
-                    keyboardRoot.currentMode = 0;
-                    dial.rotation += 30;
-                }
-            }
-            keyboardRoot.isScrubbing = false;
-            keyboardRoot.activeHoverChar = "";
         }
     }
 }
