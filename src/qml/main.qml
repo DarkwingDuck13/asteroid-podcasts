@@ -7,7 +7,6 @@ Item {
     height: 400
 
     property string currentShowTitle: ""
-    // Views: "subs", "search", "episodes", "player"
     property string activeView: "subs"
 
     Rectangle {
@@ -32,38 +31,42 @@ Item {
             Column {
                 id: subsCol
                 width: parent.width
-                spacing: 10
+                spacing: 12
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "Podcasts"
                     color: "#ffffff"
                     font.bold: true
-                    font.pixelSize: 20
+                    font.pixelSize: 22
                 }
 
-                Row {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 8
-
-                    Button {
-                        text: "+ Search"
-                        width: 90
-                        height: 32
-                        onClicked: root.activeView = "search"
+                // Huge, easy-to-tap Search Button (54px tall)
+                Button {
+                    width: parent.width
+                    height: 52
+                    palette.buttonText: "#00d2ff"
+                    text: "🔍 Search Podcasts"
+                    onClicked: {
+                        engine.buzz(25);
+                        radialOsk.open("");
                     }
+                }
 
-                    Button {
-                        text: "Now Playing"
-                        width: 110
-                        height: 32
-                        visible: engine.currentTrackTitle.length > 0
-                        onClicked: root.activeView = "player"
+                Button {
+                    width: parent.width
+                    height: 42
+                    text: "▶ Resume Playing"
+                    palette.buttonText: "#2ecc71"
+                    visible: engine.currentTrackTitle.length > 0
+                    onClicked: {
+                        engine.buzz(20);
+                        root.activeView = "player";
                     }
                 }
 
                 Text {
-                    text: "YOUR SUBSCRIPTIONS"
+                    text: "SUBSCRIPTIONS"
                     color: "#8e44ad"
                     font.bold: true
                     font.pixelSize: 11
@@ -74,7 +77,7 @@ Item {
                     model: engine.subscriptions
                     delegate: Rectangle {
                         width: subsCol.width
-                        height: 52
+                        height: 56
                         color: "#181818"
                         radius: 8
                         border.color: "#333333"
@@ -82,9 +85,10 @@ Item {
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
-                                root.currentShowTitle = modelData.title
-                                engine.loadEpisodes(modelData.title, modelData.feedUrl)
-                                root.activeView = "episodes"
+                                engine.buzz(20);
+                                root.currentShowTitle = modelData.title;
+                                engine.loadEpisodes(modelData.title, modelData.feedUrl);
+                                root.activeView = "episodes";
                             }
                         }
 
@@ -104,21 +108,24 @@ Item {
                             anchors.right: parent.right
                             anchors.rightMargin: 6
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 32
-                            height: 32
+                            width: 34
+                            height: 34
                             text: "✕"
                             palette.buttonText: "#ff4444"
-                            onClicked: engine.unsubscribe(modelData.feedUrl)
+                            onClicked: {
+                                engine.buzz(30);
+                                engine.unsubscribe(modelData.feedUrl);
+                            }
                         }
                     }
                 }
-                Item { width: 1; height: 30 }
+                Item { width: 1; height: 35 }
             }
         }
     }
 
     // ==========================================
-    // VIEW 2: SEARCH
+    // VIEW 2: SEARCH RESULTS
     // ==========================================
     Item {
         anchors.fill: parent
@@ -140,41 +147,36 @@ Item {
                     spacing: 8
                     Button {
                         text: "← Back"
-                        width: 70
-                        height: 30
-                        onClicked: root.activeView = "subs"
+                        width: 75
+                        height: 34
+                        onClicked: {
+                            engine.buzz(20);
+                            root.activeView = "subs";
+                        }
                     }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Search"
-                        color: "#ffffff"
-                        font.bold: true
-                        font.pixelSize: 18
+                    Button {
+                        text: "New Search"
+                        width: 110
+                        height: 34
+                        onClicked: {
+                            engine.buzz(20);
+                            radialOsk.open("");
+                        }
                     }
                 }
 
-                TextField {
-                    id: searchInput
-                    width: parent.width
-                    placeholderText: "Type show name..."
-                    color: "#ffffff"
-                    font.pixelSize: 13
-                    onAccepted: engine.search(text)
-                }
-
-                Button {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: engine.searching ? "Searching..." : "Find"
-                    width: 100
-                    height: 32
-                    onClicked: engine.search(searchInput.text)
+                Text {
+                    text: engine.searching ? "Searching Apple Directory..." : "SEARCH RESULTS"
+                    color: "#00d2ff"
+                    font.bold: true
+                    font.pixelSize: 11
                 }
 
                 Repeater {
                     model: engine.searchResults
                     delegate: Rectangle {
                         width: searchCol.width
-                        height: 54
+                        height: 56
                         color: "#161616"
                         radius: 8
 
@@ -206,16 +208,18 @@ Item {
                             anchors.rightMargin: 6
                             anchors.verticalCenter: parent.verticalCenter
                             text: "+ Sub"
-                            width: 60
-                            height: 30
+                            width: 64
+                            height: 34
+                            palette.buttonText: "#00ff66"
                             onClicked: {
-                                engine.subscribe(modelData.title, modelData.feedUrl)
-                                root.activeView = "subs"
+                                engine.buzz(35);
+                                engine.subscribe(modelData.title, modelData.feedUrl);
+                                root.activeView = "subs";
                             }
                         }
                     }
                 }
-                Item { width: 1; height: 30 }
+                Item { width: 1; height: 35 }
             }
         }
     }
@@ -243,9 +247,12 @@ Item {
                     spacing: 8
                     Button {
                         text: "← Back"
-                        width: 70
-                        height: 30
-                        onClicked: root.activeView = "subs"
+                        width: 75
+                        height: 34
+                        onClicked: {
+                            engine.buzz(20);
+                            root.activeView = "subs";
+                        }
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -258,10 +265,10 @@ Item {
                     }
                 }
 
-                // Global download progress bar
+                // Download progress bar
                 Rectangle {
                     width: parent.width
-                    height: 18
+                    height: 20
                     color: "#222222"
                     radius: 4
                     visible: engine.downloading
@@ -292,7 +299,7 @@ Item {
                     model: engine.episodes
                     delegate: Rectangle {
                         width: epCol.width
-                        height: 56
+                        height: 58
                         color: "#181818"
                         radius: 8
                         border.color: modelData.isDownloaded ? "#2ecc71" : "#2a2a2a"
@@ -312,32 +319,33 @@ Item {
                                 width: parent.width
                             }
                             Text {
-                                text: modelData.isDownloaded ? "On Watch" : "Cloud"
+                                text: modelData.isDownloaded ? "Ready on Watch" : "Cloud"
                                 color: modelData.isDownloaded ? "#2ecc71" : "#666666"
                                 font.pixelSize: 10
                             }
                         }
 
-                        // Play or Download button
                         Button {
                             anchors.right: parent.right
                             anchors.rightMargin: 6
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 58
-                            height: 32
+                            width: 62
+                            height: 36
                             text: modelData.isDownloaded ? "▶ Play" : "⬇ Get"
+                            palette.buttonText: modelData.isDownloaded ? "#00ff66" : "#ffffff"
                             onClicked: {
+                                engine.buzz(25);
                                 if (modelData.isDownloaded) {
-                                    engine.playEpisode(root.currentShowTitle, modelData.title)
-                                    root.activeView = "player"
+                                    engine.playEpisode(root.currentShowTitle, modelData.title);
+                                    root.activeView = "player";
                                 } else {
-                                    engine.downloadEpisode(root.currentShowTitle, modelData.title, modelData.audioUrl)
+                                    engine.downloadEpisode(root.currentShowTitle, modelData.title, modelData.audioUrl);
                                 }
                             }
                         }
                     }
                 }
-                Item { width: 1; height: 30 }
+                Item { width: 1; height: 35 }
             }
         }
     }
@@ -356,13 +364,15 @@ Item {
 
             Button {
                 text: "← Back"
-                width: 70
-                height: 30
-                onClicked: root.activeView = "subs"
+                width: 75
+                height: 34
+                onClicked: {
+                    engine.buzz(20);
+                    root.activeView = "subs";
+                }
             }
 
             Text {
-                id: trackTitle
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: engine.currentTrackTitle
                 color: "#ffffff"
@@ -375,9 +385,7 @@ Item {
                 elide: Text.ElideRight
             }
 
-            // Progress Bar / Slider
             Slider {
-                id: scrubSlider
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: parent.width
                 from: 0
@@ -404,31 +412,53 @@ Item {
                 }
             }
 
-            // Transport Controls (-15s, Play/Pause, +30s)
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 12
 
                 Button {
                     text: "-15s"
-                    width: 50
-                    height: 40
-                    onClicked: engine.skip(-15)
+                    width: 55
+                    height: 44
+                    onClicked: {
+                        engine.buzz(15);
+                        engine.skip(-15);
+                    }
                 }
 
                 Button {
                     text: engine.playing ? "⏸ Pause" : "▶ Play"
-                    width: 75
-                    height: 40
-                    onClicked: engine.togglePlayPause()
+                    width: 80
+                    height: 44
+                    onClicked: {
+                        engine.buzz(25);
+                        engine.togglePlayPause();
+                    }
                 }
 
                 Button {
                     text: "+30s"
-                    width: 50
-                    height: 40
-                    onClicked: engine.skip(30)
+                    width: 55
+                    height: 44
+                    onClicked: {
+                        engine.buzz(15);
+                        engine.skip(30);
+                    }
                 }
+            }
+        }
+    }
+
+    // ==========================================
+    // 5. THE RADIAL KEYBOARD OVERLAY
+    // ==========================================
+    RadialKeyboard {
+        id: radialOsk
+        anchors.fill: parent
+        onAccepted: (queryText) => {
+            if (queryText.trim().length > 0) {
+                engine.search(queryText.trim());
+                root.activeView = "search";
             }
         }
     }
