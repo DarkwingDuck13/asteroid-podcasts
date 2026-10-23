@@ -7,229 +7,331 @@ Item {
     height: 400
 
     property string currentShowTitle: ""
-    property string activeView: "subs"
 
     Rectangle {
         anchors.fill: parent
         color: "#000000"
     }
 
-    // ==========================================
-    // VIEW 1: SUBSCRIPTIONS
-    // ==========================================
-    Item {
+    // 3-SCREEN SWIPEABLE CAROUSEL
+    SwipeView {
+        id: swipeView
         anchors.fill: parent
-        visible: root.activeView === "subs"
+        currentIndex: 1 // Start on Screen 1 (Player / Home)
+        
+        // CRITICAL: Disable screen swiping whenever the keyboard is open!
+        interactive: !radialOsk.visible
 
-        Flickable {
-            anchors.fill: parent
-            anchors.margins: 35
-            contentWidth: width
-            contentHeight: subsCol.height
-            clip: true
+        // ==========================================
+        // SCREEN 0: SUBSCRIPTIONS & EPISODES
+        // ==========================================
+        Item {
+            Flickable {
+                anchors.fill: parent
+                anchors.margins: 35
+                contentWidth: width
+                contentHeight: subsCol.height
+                clip: true
 
-            Column {
-                id: subsCol
-                width: parent.width
-                spacing: 12
-
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: "Podcasts"
-                    color: "#ffffff"
-                    font.bold: true
-                    font.pixelSize: 22
-                }
-
-                // Huge, easy-to-tap Search Button (54px tall)
-                Button {
+                Column {
+                    id: subsCol
                     width: parent.width
-                    height: 52
-                    palette.buttonText: "#00d2ff"
-                    text: "🔍 Search Podcasts"
-                    onClicked: {
-                        engine.buzz(25);
-                        radialOsk.open("");
+                    spacing: 12
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Subscriptions"
+                        color: "#ffffff"
+                        font.bold: true
+                        font.pixelSize: 20
                     }
-                }
 
-                Button {
-                    width: parent.width
-                    height: 42
-                    text: "▶ Resume Playing"
-                    palette.buttonText: "#2ecc71"
-                    visible: engine.currentTrackTitle.length > 0
-                    onClicked: {
-                        engine.buzz(20);
-                        root.activeView = "player";
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Swipe right for Player ➔"
+                        color: "#666666"
+                        font.pixelSize: 11
                     }
-                }
 
-                Text {
-                    text: "SUBSCRIPTIONS"
-                    color: "#8e44ad"
-                    font.bold: true
-                    font.pixelSize: 11
-                    visible: engine.subscriptions.length > 0
-                }
+                    Repeater {
+                        model: engine.subscriptions
+                        delegate: Rectangle {
+                            width: subsCol.width
+                            height: 60
+                            color: "#18181c"
+                            radius: 10
+                            border.color: "#333338"
+                            border.width: 1
 
-                Repeater {
-                    model: engine.subscriptions
-                    delegate: Rectangle {
-                        width: subsCol.width
-                        height: 56
-                        color: "#181818"
-                        radius: 8
-                        border.color: "#333333"
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                engine.buzz(20);
-                                root.currentShowTitle = modelData.title;
-                                engine.loadEpisodes(modelData.title, modelData.feedUrl);
-                                root.activeView = "episodes";
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    engine.buzz(25);
+                                    root.currentShowTitle = modelData.title;
+                                    engine.loadEpisodes(modelData.title, modelData.feedUrl);
+                                    episodePopup.open();
+                                }
                             }
-                        }
-
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.title
-                            color: "#ffffff"
-                            font.bold: true
-                            font.pixelSize: 13
-                            width: 170
-                            elide: Text.ElideRight
-                        }
-
-                        Button {
-                            anchors.right: parent.right
-                            anchors.rightMargin: 6
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 34
-                            height: 34
-                            text: "✕"
-                            palette.buttonText: "#ff4444"
-                            onClicked: {
-                                engine.buzz(30);
-                                engine.unsubscribe(modelData.feedUrl);
-                            }
-                        }
-                    }
-                }
-                Item { width: 1; height: 35 }
-            }
-        }
-    }
-
-    // ==========================================
-    // VIEW 2: SEARCH RESULTS
-    // ==========================================
-    Item {
-        anchors.fill: parent
-        visible: root.activeView === "search"
-
-        Flickable {
-            anchors.fill: parent
-            anchors.margins: 35
-            contentWidth: width
-            contentHeight: searchCol.height
-            clip: true
-
-            Column {
-                id: searchCol
-                width: parent.width
-                spacing: 10
-
-                Row {
-                    spacing: 8
-                    Button {
-                        text: "← Back"
-                        width: 75
-                        height: 34
-                        onClicked: {
-                            engine.buzz(20);
-                            root.activeView = "subs";
-                        }
-                    }
-                    Button {
-                        text: "New Search"
-                        width: 110
-                        height: 34
-                        onClicked: {
-                            engine.buzz(20);
-                            radialOsk.open("");
-                        }
-                    }
-                }
-
-                Text {
-                    text: engine.searching ? "Searching Apple Directory..." : "SEARCH RESULTS"
-                    color: "#00d2ff"
-                    font.bold: true
-                    font.pixelSize: 11
-                }
-
-                Repeater {
-                    model: engine.searchResults
-                    delegate: Rectangle {
-                        width: searchCol.width
-                        height: 56
-                        color: "#161616"
-                        radius: 8
-
-                        Column {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 150
 
                             Text {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 12
+                                anchors.verticalCenter: parent.verticalCenter
                                 text: modelData.title
                                 color: "#ffffff"
                                 font.bold: true
-                                font.pixelSize: 12
+                                font.pixelSize: 14
+                                width: 160
                                 elide: Text.ElideRight
-                                width: parent.width
                             }
-                            Text {
-                                text: modelData.artist
-                                color: "#888888"
-                                font.pixelSize: 10
-                                elide: Text.ElideRight
-                                width: parent.width
-                            }
-                        }
 
-                        Button {
-                            anchors.right: parent.right
-                            anchors.rightMargin: 6
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "+ Sub"
-                            width: 64
-                            height: 34
-                            palette.buttonText: "#00ff66"
-                            onClicked: {
-                                engine.buzz(35);
-                                engine.subscribe(modelData.title, modelData.feedUrl);
-                                root.activeView = "subs";
+                            Button {
+                                anchors.right: parent.right
+                                anchors.rightMargin: 8
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 36
+                                height: 36
+                                text: "✕"
+                                palette.buttonText: "#ff4444"
+                                onClicked: {
+                                    engine.buzz(35);
+                                    engine.unsubscribe(modelData.feedUrl);
+                                }
                             }
                         }
                     }
+                    Item { width: 1; height: 35 }
                 }
-                Item { width: 1; height: 35 }
+            }
+        }
+
+        // ==========================================
+        // SCREEN 1: NOW PLAYING (HOME)
+        // ==========================================
+        Item {
+            Column {
+                anchors.fill: parent
+                anchors.margins: 35
+                spacing: 10
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: "Now Playing"
+                    color: "#8e44ad"
+                    font.bold: true
+                    font.pixelSize: 18
+                }
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: engine.currentTrackTitle.length > 0 ? engine.currentTrackTitle : "No episode loaded"
+                    color: "#ffffff"
+                    font.bold: true
+                    font.pixelSize: 14
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
+                }
+
+                Slider {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width - 20
+                    from: 0
+                    to: Math.max(1, engine.duration)
+                    value: engine.position
+                    onMoved: engine.seek(value)
+                }
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    function fmt(ms) {
+                        var s = Math.floor(ms / 1000);
+                        var m = Math.floor(s / 60);
+                        return m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+                    }
+                    text: fmt(engine.position) + " / " + fmt(engine.duration)
+                    color: "#888888"
+                    font.family: "Monospace"
+                    font.pixelSize: 12
+                }
+
+                // Transport Controls
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 12
+
+                    Rectangle {
+                        width: 58; height: 48; radius: 8
+                        color: "#222228"
+                        Text { anchors.centerIn: parent; text: "-15s"; color: "#fff"; font.bold: true; font.pixelSize: 13 }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: { engine.buzz(20); engine.skip(-15); }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 86; height: 48; radius: 8
+                        color: "#00ff66"
+                        Text {
+                            anchors.centerIn: parent
+                            text: engine.playing ? "⏸ PAUSE" : "▶ PLAY"
+                            color: "#000000"
+                            font.bold: true
+                            font.pixelSize: 14
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: { engine.buzz(35); engine.togglePlayPause(); }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 58; height: 48; radius: 8
+                        color: "#222228"
+                        Text { anchors.centerIn: parent; text: "+30s"; color: "#fff"; font.bold: true; font.pixelSize: 13 }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: { engine.buzz(20); engine.skip(30); }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // SCREEN 2: SEARCH TO ADD
+        // ==========================================
+        Item {
+            Flickable {
+                anchors.fill: parent
+                anchors.margins: 35
+                contentWidth: width
+                contentHeight: searchCol.height
+                clip: true
+
+                Column {
+                    id: searchCol
+                    width: parent.width
+                    spacing: 12
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Add Podcasts"
+                        color: "#ffffff"
+                        font.bold: true
+                        font.pixelSize: 20
+                    }
+
+                    // MASSIVE HIGH-CONTRAST SEARCH BUTTON (Solid Cyan with Black Text)
+                    Rectangle {
+                        width: parent.width
+                        height: 54
+                        radius: 10
+                        color: searchBtnMouse.pressed ? "#0099cc" : "#00d2ff"
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "🔍 TAP TO SEARCH"
+                            color: "#000000"
+                            font.bold: true
+                            font.pixelSize: 15
+                        }
+
+                        MouseArea {
+                            id: searchBtnMouse
+                            anchors.fill: parent
+                            onClicked: {
+                                engine.buzz(35);
+                                radialOsk.open("");
+                            }
+                        }
+                    }
+
+                    Text {
+                        text: engine.searching ? "Searching Apple Directory..." : (engine.searchResults.length > 0 ? "RESULTS" : "")
+                        color: "#00d2ff"
+                        font.bold: true
+                        font.pixelSize: 11
+                    }
+
+                    Repeater {
+                        model: engine.searchResults
+                        delegate: Rectangle {
+                            width: searchCol.width
+                            height: 60
+                            color: "#18181c"
+                            radius: 10
+
+                            Column {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 10
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 140
+
+                                Text {
+                                    text: modelData.title
+                                    color: "#ffffff"
+                                    font.bold: true
+                                    font.pixelSize: 13
+                                    elide: Text.ElideRight
+                                    width: parent.width
+                                }
+                                Text {
+                                    text: modelData.artist
+                                    color: "#888888"
+                                    font.pixelSize: 10
+                                    elide: Text.ElideRight
+                                    width: parent.width
+                                }
+                            }
+
+                            // Solid Green Subscribe Button
+                            Rectangle {
+                                anchors.right: parent.right
+                                anchors.rightMargin: 8
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 68
+                                height: 38
+                                radius: 8
+                                color: "#00ff66"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "+ SUB"
+                                    color: "#000000"
+                                    font.bold: true
+                                    font.pixelSize: 12
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        engine.buzz(45);
+                                        engine.subscribe(modelData.title, modelData.feedUrl);
+                                        swipeView.currentIndex = 0; // Jump to Subscriptions
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Item { width: 1; height: 35 }
+                }
             }
         }
     }
 
-    // ==========================================
-    // VIEW 3: EPISODES
-    // ==========================================
-    Item {
+    // EPISODE LIST MODAL (Opens when you tap a show in Subscriptions)
+    Popup {
+        id: episodePopup
         anchors.fill: parent
-        visible: root.activeView === "episodes"
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle { color: "#000000" }
 
         Flickable {
             anchors.fill: parent
@@ -245,70 +347,58 @@ Item {
 
                 Row {
                     spacing: 8
-                    Button {
-                        text: "← Back"
-                        width: 75
-                        height: 34
-                        onClicked: {
-                            engine.buzz(20);
-                            root.activeView = "subs";
-                        }
+                    Rectangle {
+                        width: 70; height: 34; radius: 6; color: "#222"
+                        Text { anchors.centerIn: parent; text: "← Close"; color: "#fff"; font.bold: true; font.pixelSize: 12 }
+                        MouseArea { anchors.fill: parent; onClicked: episodePopup.close() }
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.currentShowTitle
                         color: "#8e44ad"
                         font.bold: true
-                        font.pixelSize: 14
-                        width: 130
+                        font.pixelSize: 13
+                        width: 140
                         elide: Text.ElideRight
                     }
                 }
 
-                // Download progress bar
+                // Download Progress Banner
                 Rectangle {
                     width: parent.width
-                    height: 20
-                    color: "#222222"
+                    height: 22
+                    color: "#222228"
                     radius: 4
                     visible: engine.downloading
 
                     Rectangle {
                         height: parent.height
                         width: parent.width * (engine.downloadProgress / 100.0)
-                        color: "#2ecc71"
+                        color: "#00ff66"
                         radius: 4
                     }
                     Text {
                         anchors.centerIn: parent
                         text: "Downloading " + engine.downloadProgress + "%"
-                        color: "#ffffff"
-                        font.pixelSize: 10
+                        color: "#000000"
+                        font.pixelSize: 11
                         font.bold: true
                     }
-                }
-
-                Text {
-                    text: engine.loadingEpisodes ? "Fetching episodes..." : "EPISODES"
-                    color: "#888888"
-                    font.bold: true
-                    font.pixelSize: 11
                 }
 
                 Repeater {
                     model: engine.episodes
                     delegate: Rectangle {
                         width: epCol.width
-                        height: 58
-                        color: "#181818"
+                        height: 60
+                        color: "#16161a"
                         radius: 8
-                        border.color: modelData.isDownloaded ? "#2ecc71" : "#2a2a2a"
 
                         Column {
                             anchors.left: parent.left
-                            anchors.leftMargin: 8
+                            anchors.leftMargin: 10
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 140
+                            width: 135
 
                             Text {
                                 text: modelData.title
@@ -319,27 +409,41 @@ Item {
                                 width: parent.width
                             }
                             Text {
-                                text: modelData.isDownloaded ? "Ready on Watch" : "Cloud"
-                                color: modelData.isDownloaded ? "#2ecc71" : "#666666"
+                                text: modelData.isDownloaded ? "On Watch" : "Cloud"
+                                color: modelData.isDownloaded ? "#00ff66" : "#888888"
                                 font.pixelSize: 10
                             }
                         }
 
-                        Button {
+                        // Play or Download Target
+                        Rectangle {
                             anchors.right: parent.right
                             anchors.rightMargin: 6
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 62
-                            height: 36
-                            text: modelData.isDownloaded ? "▶ Play" : "⬇ Get"
-                            palette.buttonText: modelData.isDownloaded ? "#00ff66" : "#ffffff"
-                            onClicked: {
-                                engine.buzz(25);
-                                if (modelData.isDownloaded) {
-                                    engine.playEpisode(root.currentShowTitle, modelData.title);
-                                    root.activeView = "player";
-                                } else {
-                                    engine.downloadEpisode(root.currentShowTitle, modelData.title, modelData.audioUrl);
+                            width: 66
+                            height: 38
+                            radius: 8
+                            color: modelData.isDownloaded ? "#00ff66" : "#2a2a32"
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData.isDownloaded ? "▶ PLAY" : "⬇ GET"
+                                color: modelData.isDownloaded ? "#000000" : "#ffffff"
+                                font.bold: true
+                                font.pixelSize: 12
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    engine.buzz(30);
+                                    if (modelData.isDownloaded) {
+                                        engine.playEpisode(root.currentShowTitle, modelData.title);
+                                        episodePopup.close();
+                                        swipeView.currentIndex = 1; // Jump to Player!
+                                    } else {
+                                        engine.downloadEpisode(root.currentShowTitle, modelData.title, modelData.audioUrl);
+                                    }
                                 }
                             }
                         }
@@ -351,106 +455,7 @@ Item {
     }
 
     // ==========================================
-    // VIEW 4: PLAYER (NOW PLAYING)
-    // ==========================================
-    Item {
-        anchors.fill: parent
-        visible: root.activeView === "player"
-
-        Column {
-            anchors.fill: parent
-            anchors.margins: 40
-            spacing: 12
-
-            Button {
-                text: "← Back"
-                width: 75
-                height: 34
-                onClicked: {
-                    engine.buzz(20);
-                    root.activeView = "subs";
-                }
-            }
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: engine.currentTrackTitle
-                color: "#ffffff"
-                font.bold: true
-                font.pixelSize: 14
-                width: parent.width
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.Wrap
-                maximumLineCount: 3
-                elide: Text.ElideRight
-            }
-
-            Slider {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width
-                from: 0
-                to: Math.max(1, engine.duration)
-                value: engine.position
-                onMoved: engine.seek(value)
-            }
-
-            Row {
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 6
-
-                Text {
-                    function fmt(ms) {
-                        var s = Math.floor(ms / 1000);
-                        var m = Math.floor(s / 60);
-                        s = s % 60;
-                        return m + ":" + (s < 10 ? "0" : "") + s;
-                    }
-                    text: fmt(engine.position) + " / " + fmt(engine.duration)
-                    color: "#888888"
-                    font.family: "Monospace"
-                    font.pixelSize: 12
-                }
-            }
-
-            Row {
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 12
-
-                Button {
-                    text: "-15s"
-                    width: 55
-                    height: 44
-                    onClicked: {
-                        engine.buzz(15);
-                        engine.skip(-15);
-                    }
-                }
-
-                Button {
-                    text: engine.playing ? "⏸ Pause" : "▶ Play"
-                    width: 80
-                    height: 44
-                    onClicked: {
-                        engine.buzz(25);
-                        engine.togglePlayPause();
-                    }
-                }
-
-                Button {
-                    text: "+30s"
-                    width: 55
-                    height: 44
-                    onClicked: {
-                        engine.buzz(15);
-                        engine.skip(30);
-                    }
-                }
-            }
-        }
-    }
-
-    // ==========================================
-    // 5. THE RADIAL KEYBOARD OVERLAY
+    // THE FULL-SCREEN RADIAL KEYBOARD OVERLAY
     // ==========================================
     RadialKeyboard {
         id: radialOsk
@@ -458,7 +463,6 @@ Item {
         onAccepted: (queryText) => {
             if (queryText.trim().length > 0) {
                 engine.search(queryText.trim());
-                root.activeView = "search";
             }
         }
     }
