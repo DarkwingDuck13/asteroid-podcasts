@@ -109,7 +109,7 @@ Item {
             anchors.fill: parent
             spacing: 0
 
-            // Top Header: Active Bank Label + Pagination
+            // Header: Active Bank Label + Pagination
             Rectangle {
                 width: parent.width
                 height: 36
@@ -160,7 +160,7 @@ Item {
                 }
             }
 
-            // The Magnifier Lens (Current selected letter)
+            // The Magnifier Lens
             Rectangle {
                 width: parent.width
                 height: 44
@@ -175,7 +175,7 @@ Item {
                 }
             }
 
-            // SOLID TOUCH BUTTON PANEL (No gaps, thumb-sized)
+            // SOLID TOUCH BUTTON PANEL
             Rectangle {
                 width: parent.width
                 height: 152
@@ -184,12 +184,11 @@ Item {
                 Column {
                     anchors.fill: parent
 
-                    // Row 1: Backspace & Space (52px tall)
+                    // Row 1: Backspace & Space
                     Row {
                         width: parent.width
                         height: 52
 
-                        // Backspace Button
                         Rectangle {
                             width: parent.width / 2
                             height: parent.height
@@ -217,7 +216,6 @@ Item {
                             }
                         }
 
-                        // Space Button
                         Rectangle {
                             width: parent.width / 2
                             height: parent.height
@@ -244,7 +242,7 @@ Item {
                         }
                     }
 
-                    // Row 2: Giant Green SEARCH / ENTER Bar (60px tall)
+                    // Row 2: Giant Green SEARCH Bar
                     Rectangle {
                         width: parent.width
                         height: 60
@@ -262,7 +260,7 @@ Item {
                             id: enterMouse
                             anchors.fill: parent
                             onClicked: {
-                                keyboardRoot.hapticPulse(50); // Strong confirm buzz
+                                keyboardRoot.hapticPulse(50);
                                 keyboardRoot.accepted(keyboardRoot.text);
                                 keyboardRoot.close();
                             }
@@ -276,27 +274,25 @@ Item {
         MouseArea {
             id: hubSwipe
             width: parent.width
-            height: 118 // Covers top half of hub (above button panel)
+            height: 118
             anchors.top: parent.top
             preventStealing: true
             property real startX: 0
 
-            onPressed: (mouse) => {
+            onPressed: function(mouse) {
                 startX = mouse.x;
             }
 
-            onReleased: (mouse) => {
+            onReleased: function(mouse) {
                 var delta = mouse.x - startX;
                 if (Math.abs(delta) > 30) {
                     keyboardRoot.hapticPulse(35);
                     if (delta < 0) {
-                        // Swipe Left: Next bank
                         if (keyboardRoot.currentMode < 2) {
                             keyboardRoot.currentMode++;
                             dial.rotation -= 30;
                         }
                     } else {
-                        // Swipe Right: Previous bank
                         if (keyboardRoot.currentMode > -1) {
                             keyboardRoot.currentMode--;
                             dial.rotation += 30;
@@ -319,7 +315,6 @@ Item {
             var dy = mouse.y - 200;
             var dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Ring touch zone: 130px to 210px
             if (dist >= 125 && dist <= 210) {
                 keyboardRoot.isScrubbing = true;
                 
@@ -332,7 +327,7 @@ Item {
 
                 if (newChar !== keyboardRoot.activeHoverChar) {
                     keyboardRoot.activeHoverChar = newChar;
-                    keyboardRoot.hapticPulse(25); // Crisp ERM mechanical tick
+                    keyboardRoot.hapticPulse(25);
                 }
             } else {
                 keyboardRoot.isScrubbing = false;
@@ -340,9 +335,9 @@ Item {
             }
         }
 
-        onPressed: (mouse) => updateHover(mouse)
-        onPositionChanged: (mouse) => updateHover(mouse)
-        onReleased: (mouse) => {
+        onPressed: function(mouse) { updateHover(mouse); }
+        onPositionChanged: function(mouse) { updateHover(mouse); }
+        onReleased: function(mouse) {
             if (keyboardRoot.isScrubbing && keyboardRoot.activeHoverChar.length > 0) {
                 keyboardRoot.hapticPulse(35);
                 keyboardRoot.text += keyboardRoot.activeHoverChar;
