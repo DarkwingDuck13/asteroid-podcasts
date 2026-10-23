@@ -1,11 +1,14 @@
 #include "podcastengine.h"
 #include <QDir>
 #include <QFile>
+#include <QFileInfoList>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QXmlStreamReader>
 #include <QUrlQuery>
+#include <QRegularExpression>
+#include <QDateTime>
 #include <QDebug>
 
 PodcastEngine::PodcastEngine(QObject *parent) : QObject(parent) {
@@ -23,10 +26,40 @@ PodcastEngine::PodcastEngine(QObject *parent) : QObject(parent) {
     QDir().mkpath(m_storagePath);
 
     loadSubscriptions();
+    refreshDownloads();
 }
 
 PodcastEngine::~PodcastEngine() {
     saveSubscriptions();
+}
+
+void PodcastEngine::buzz(int ms) {
+    QFile file("/sys/class/timed_output/vibrator/enable");
+    if (file.open(QIODevice::WriteOnly)) {
+        file.write(QByteArray::number(ms));
+        file.close();
+    }
+}
+
+void PodcastEngine::refreshDownloads() {
+    m_downloadedEpisodes.clear();
+    QDir rootDir(m_storagePath);
+    QStringList showDirs = rootDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+
+    for (const QString &showDirName : showDirs) {
+        QDir showDir(m_storagePath + "/" + showDirName);
+        QFileInfoList files = showDir.entryInfoList(QStringList() << "*.mp3" << "*.m4a", QDir::Files, QDir::Time);
+
+        for (const QFileInfo &fi : files) {
+            QVariantMap item;
+            item["showTitle"] = showDirName;
+            item["epTitle"] = fi.completeBaseName();
+            item["filePath"] = fi.absoluteFilePath();
+            item["sizeMB"] = QString::number(fi.size() / 1024.0 / 1024.0, 'f', 1) + " MB";
+            m_downloadedEpisodes.append(item);
+        }
+    }
+    emit downloadedEpisodesChanged();
 }
 
 void PodcastEngine::search(const QString &term) {
@@ -71,7 +104,7 @@ void PodcastEngine::onSearchFinished() {
 
 void PodcastEngine::subscribe(const QString &title, const QString &feedUrl) {
     for (const QVariant &v : m_subscriptions) {
-        if (v.toMap()["feedUrl"].toString() == feedUrl) return; // already subscribed
+        if (v.toMap()["feedUrl"].toString() == feedUrl) return;
     }
     QVariantMap item;
     item["title"] = title;
@@ -92,12 +125,29 @@ void PodcastEngine::unsubscribe(const QString &feedUrl) {
     }
 }
 
+// OFFLINE-FIRST EPISODE LOADING
 void PodcastEngine::loadEpisodes(const QString &showTitle, const QString &feedUrl) {
     m_currentShowLoading = showTitle;
-    m_isLoadingEpisodes = true;
     m_episodes.clear();
-    emit loadingEpisodesChanged();
+
+    // 1. Scan local disk first! (Instantly shows offline episodes)
+    QString showDir = m_storagePath + "/" + sanitizeFilename(showTitle);
+    QDir dir(showDir);
+    QFileInfoList fileList = dir.entryInfoList(QStringList() << "*.mp3" << "*.m4a", QDir::Files, QDir::Time);
+
+    for (const QFileInfo &fi : fileList) {
+        QVariantMap ep;
+        ep["title"] = fi.completeBaseName();
+        ep["pubDate"] = fi.lastModified().toString("MMM d, yyyy");
+        ep["audioUrl"] = QUrl::fromLocalFile(fi.absoluteFilePath()).toString();
+        ep["isDownloaded"] = true;
+        m_episodes.append(ep);
+    }
     emit episodesChanged();
+
+    // 2. Try fetching the online RSS feed if network is available
+    m_isLoadingEpisodes = true;
+    emit loadingEpisodesChanged();
 
     QNetworkReply *reply = m_net->get(QNetworkRequest(QUrl(feedUrl)));
     connect(reply, &QNetworkReply::finished, this, &PodcastEngine::onFeedFinished);
@@ -109,6 +159,7 @@ void PodcastEngine::onFeedFinished() {
 
     if (reply->error() == QNetworkReply::NoError) {
         QXmlStreamReader xml(reply->readAll());
+        QVariantList freshEpisodes;
         QVariantMap currentEpisode;
         bool inItem = false;
         int count = 0;
@@ -136,13 +187,20 @@ void PodcastEngine::onFeedFinished() {
                     if (!currentEpisode["audioUrl"].toString().isEmpty()) {
                         QString filePath = episodeFilePath(m_currentShowLoading, currentEpisode["title"].toString());
                         currentEpisode["isDownloaded"] = QFile::exists(filePath);
-                        m_episodes.append(currentEpisode);
+                        freshEpisodes.append(currentEpisode);
                         count++;
                     }
                 }
             }
         }
+
+        if (!freshEpisodes.isEmpty()) {
+            m_episodes = freshEpisodes;
+        }
+    } else {
+        qDebug() << "Network offline or failed, keeping local episodes intact:" << reply->errorString();
     }
+
     reply->deleteLater();
     m_isLoadingEpisodes = false;
     emit loadingEpisodesChanged();
@@ -205,6 +263,7 @@ void PodcastEngine::onDownloadFinished() {
         m_episodes[i] = ep;
     }
     emit episodesChanged();
+    refreshDownloads();
 }
 
 void PodcastEngine::deleteDownloadedEpisode(const QString &showTitle, const QString &epTitle) {
@@ -220,13 +279,18 @@ void PodcastEngine::deleteDownloadedEpisode(const QString &showTitle, const QStr
             break;
         }
     }
+    refreshDownloads();
 }
 
 void PodcastEngine::playEpisode(const QString &showTitle, const QString &epTitle) {
     QString filePath = episodeFilePath(showTitle, epTitle);
+    playDirectFile(filePath, epTitle);
+}
+
+void PodcastEngine::playDirectFile(const QString &filePath, const QString &title) {
     if (!QFile::exists(filePath)) return;
 
-    m_currentTrackTitle = epTitle;
+    m_currentTrackTitle = title;
     emit currentTrackTitleChanged();
 
     m_player->setSource(QUrl::fromLocalFile(filePath));
@@ -274,13 +338,5 @@ void PodcastEngine::saveSubscriptions() {
     if (file.open(QIODevice::WriteOnly)) {
         QJsonArray arr = QJsonArray::fromVariantList(m_subscriptions);
         file.write(QJsonDocument(arr).toJson());
-    }
-}
-
-void PodcastEngine::buzz(int ms) {
-    QFile file("/sys/class/timed_output/vibrator/enable");
-    if (file.open(QIODevice::WriteOnly)) {
-        file.write(QByteArray::number(ms));
-        file.close();
     }
 }
