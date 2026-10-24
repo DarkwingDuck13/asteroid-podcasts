@@ -8,6 +8,7 @@
 #include <QXmlStreamReader>
 #include <QUrlQuery>
 #include <QRegularExpression>
+#include <QProcess>
 #include <QDateTime>
 #include <QDebug>
 
@@ -18,19 +19,132 @@ PodcastEngine::PodcastEngine(QObject *parent) : QObject(parent) {
     m_player->setAudioOutput(m_audioOutput);
     m_audioOutput->setVolume(1.0);
 
-    connect(m_player, &QMediaPlayer::playbackStateChanged, this, &PodcastEngine::playingChanged);
+    connect(m_player, &QMediaPlayer::playbackStateChanged, this, &PodcastEngine::onPlaybackStateChanged);
+    connect(m_player, &QMediaPlayer::mediaStatusChanged, this, &PodcastEngine::onMediaStatusChanged);
     connect(m_player, &QMediaPlayer::positionChanged, this, &PodcastEngine::positionChanged);
     connect(m_player, &QMediaPlayer::durationChanged, this, &PodcastEngine::durationChanged);
 
     m_storagePath = QDir::homePath() + "/podcasts";
     QDir().mkpath(m_storagePath);
 
+    // Auto-save playback state every 5 seconds while listening
+    m_saveTimer = new QTimer(this);
+    connect(m_saveTimer, &QTimer::timeout, this, &PodcastEngine::autoSaveState);
+
     loadSubscriptions();
     refreshDownloads();
+    loadLastState();
+    refreshVolume();
 }
 
 PodcastEngine::~PodcastEngine() {
+    saveCurrentState();
     saveSubscriptions();
+    releaseWakeLock();
+}
+
+void PodcastEngine::acquireWakeLock() {
+    QFile file("/sys/power/wake_lock");
+    if (file.open(QIODevice::WriteOnly)) {
+        file.write("asteroid-podcasts");
+        file.close();
+    } else {
+        QProcess::startDetached("sh", QStringList() << "-c" << "echo asteroid-podcasts > /sys/power/wake_lock 2>/dev/null || true");
+    }
+}
+
+void PodcastEngine::releaseWakeLock() {
+    QFile file("/sys/power/wake_unlock");
+    if (file.open(QIODevice::WriteOnly)) {
+        file.write("asteroid-podcasts");
+        file.close();
+    } else {
+        QProcess::startDetached("sh", QStringList() << "-c" << "echo asteroid-podcasts > /sys/power/wake_unlock 2>/dev/null || true");
+    }
+}
+
+void PodcastEngine::onPlaybackStateChanged(QMediaPlayer::PlaybackState state) {
+    if (state == QMediaPlayer::PlayingState) {
+        acquireWakeLock(); // Screen can turn off, CPU stays awake!
+        m_saveTimer->start(5000);
+    } else {
+        releaseWakeLock(); // Allow watch to sleep when paused
+        m_saveTimer->stop();
+        saveCurrentState();
+    }
+    emit playingChanged();
+}
+
+void PodcastEngine::onMediaStatusChanged(QMediaPlayer::MediaStatus status) {
+    if (status == QMediaPlayer::LoadedMedia && m_resumeSeekPos > 0) {
+        m_player->setPosition(m_resumeSeekPos);
+        m_resumeSeekPos = 0;
+    }
+}
+
+void PodcastEngine::autoSaveState() {
+    if (isPlaying()) {
+        saveCurrentState();
+    }
+}
+
+void PodcastEngine::saveCurrentState() {
+    if (m_currentFilePath.isEmpty()) return;
+
+    QJsonObject obj;
+    obj["showTitle"] = m_currentShowTitle;
+    obj["epTitle"] = m_currentTrackTitle;
+    obj["filePath"] = m_currentFilePath;
+    obj["position"] = static_cast<qint64>(m_player->position());
+    obj["duration"] = static_cast<qint64>(m_player->duration());
+
+    QFile file(m_storagePath + "/state.json");
+    if (file.open(QIODevice::WriteOnly)) {
+        file.write(QJsonDocument(obj).toJson());
+    }
+}
+
+void PodcastEngine::loadLastState() {
+    QFile file(m_storagePath + "/state.json");
+    if (file.open(QIODevice::ReadOnly)) {
+        QJsonObject obj = QJsonDocument::fromJson(file.readAll()).object();
+        QString path = obj["filePath"].toString();
+        if (QFile::exists(path)) {
+            m_currentShowTitle = obj["showTitle"].toString();
+            m_currentTrackTitle = obj["epTitle"].toString();
+            m_currentFilePath = path;
+            m_resumeSeekPos = obj["position"].toVariant().toLongLong();
+
+            m_player->setSource(QUrl::fromLocalFile(m_currentFilePath));
+            emit currentTrackTitleChanged();
+        }
+    }
+}
+
+void PodcastEngine::volumeUp() {
+    QProcess::startDetached("pactl", QStringList() << "set-sink-volume" << "@DEFAULT_SINK@" << "+5%");
+    m_currentVolume = qMin(100, m_currentVolume + 5);
+    emit volumeChanged();
+    buzz(20);
+}
+
+void PodcastEngine::volumeDown() {
+    QProcess::startDetached("pactl", QStringList() << "set-sink-volume" << "@DEFAULT_SINK@" << "-5%");
+    m_currentVolume = qMax(0, m_currentVolume - 5);
+    emit volumeChanged();
+    buzz(20);
+}
+
+void PodcastEngine::refreshVolume() {
+    QProcess proc;
+    proc.start("sh", QStringList() << "-c" << "pactl get-sink-volume @DEFAULT_SINK@ | grep -o '[0-9]*%' | head -1 | tr -d '%'");
+    if (proc.waitForFinished(800)) {
+        QString out = QString::fromUtf8(proc.readAllStandardOutput()).trimmed();
+        if (!out.isEmpty()) {
+            m_currentVolume = out.toInt();
+            emit volumeChanged();
+        }
+    }
 }
 
 void PodcastEngine::buzz(int ms) {
@@ -129,7 +243,6 @@ void PodcastEngine::loadEpisodes(const QString &showTitle, const QString &feedUr
     m_currentShowLoading = showTitle;
     m_episodes.clear();
 
-    // 1. OFFLINE SCAN: Instantly load files already on disk
     QString showDir = m_storagePath + "/" + sanitizeFilename(showTitle);
     QDir dir(showDir);
     QFileInfoList fileList = dir.entryInfoList(QStringList() << "*.mp3" << "*.m4a", QDir::Files, QDir::Time);
@@ -144,7 +257,6 @@ void PodcastEngine::loadEpisodes(const QString &showTitle, const QString &feedUr
     }
     emit episodesChanged();
 
-    // 2. Fetch fresh online RSS feed if network is available
     m_isLoadingEpisodes = true;
     emit loadingEpisodesChanged();
 
@@ -196,10 +308,7 @@ void PodcastEngine::onFeedFinished() {
         if (!freshEpisodes.isEmpty()) {
             m_episodes = freshEpisodes;
         }
-    } else {
-        qDebug() << "Network offline, keeping local files visible:" << reply->errorString();
     }
-
     reply->deleteLater();
     m_isLoadingEpisodes = false;
     emit loadingEpisodesChanged();
@@ -281,14 +390,17 @@ void PodcastEngine::deleteDownloadedEpisode(const QString &showTitle, const QStr
 }
 
 void PodcastEngine::playEpisode(const QString &showTitle, const QString &epTitle) {
+    m_currentShowTitle = showTitle;
     QString filePath = episodeFilePath(showTitle, epTitle);
     playDirectFile(filePath, epTitle);
 }
 
-void PodcastEngine::playDirectFile(const QString &filePath, const QString &title) {
+void PodcastEngine::playDirectFile(const QString &filePath, const QString &title, qint64 startPos) {
     if (!QFile::exists(filePath)) return;
 
     m_currentTrackTitle = title;
+    m_currentFilePath = filePath;
+    m_resumeSeekPos = startPos;
     emit currentTrackTitleChanged();
 
     m_player->setSource(QUrl::fromLocalFile(filePath));
