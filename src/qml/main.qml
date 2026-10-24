@@ -8,6 +8,10 @@ Item {
 
     property string currentShowTitle: ""
 
+    // Dialog state for long-press deletion
+    property string deleteShowTitle: ""
+    property string deleteEpTitle: ""
+
     Rectangle {
         anchors.fill: parent
         color: "#000000"
@@ -17,10 +21,10 @@ Item {
         id: swipeView
         anchors.fill: parent
         currentIndex: 1 // Starts on Screen 1 (Player / Home)
-        interactive: !radialOsk.visible // Locks swiping while typing!
+        interactive: !radialOsk.visible
 
         // ==========================================
-        // SCREEN 0: SUBSCRIPTIONS & EPISODES (OFFLINE-FIRST)
+        // SCREEN 0: SUBSCRIPTIONS & EPISODES
         // ==========================================
         Item {
             Flickable {
@@ -43,7 +47,7 @@ Item {
                         font.pixelSize: 22
                     }
 
-                    // --- SECTION A: READY ON WATCH (ALWAYS VISIBLE OFFLINE!) ---
+                    // --- SECTION A: READY ON WATCH (OFFLINE) ---
                     Text {
                         text: "READY ON WATCH (OFFLINE)"
                         color: "#00ff66"
@@ -85,13 +89,13 @@ Item {
                                 }
                             }
 
-                            // 1-Tap Instant Offline Play
+                            // 1-Tap Offline Play + Long Press to Delete
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.rightMargin: 8
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 68
-                                height: 44
+                                width: 72
+                                height: 46
                                 radius: 10
                                 color: "#00ff66"
 
@@ -108,7 +112,13 @@ Item {
                                     onClicked: {
                                         engine.buzz(35);
                                         engine.playDirectFile(modelData.filePath, modelData.epTitle);
-                                        swipeView.currentIndex = 1; // Jump straight to Player!
+                                        swipeView.currentIndex = 1; // Jump to Player!
+                                    }
+                                    onPressAndHold: {
+                                        engine.buzz(50);
+                                        root.deleteShowTitle = modelData.showTitle;
+                                        root.deleteEpTitle = modelData.epTitle;
+                                        deleteConfirmOverlay.visible = true;
                                     }
                                 }
                             }
@@ -215,7 +225,7 @@ Item {
                     text: engine.currentTrackTitle.length > 0 ? engine.currentTrackTitle : "Ready to Play"
                     color: "#ffffff"
                     font.bold: true
-                    font.pixelSize: 20
+                    font.pixelSize: 19
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.Wrap
@@ -224,13 +234,13 @@ Item {
                 }
             }
 
-            // 2. EQUATOR TIMELINE & TIME
+            // 2. EQUATOR TIMELINE & SYSTEM VOLUME
             Column {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: 0
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: parent.width - 30
-                spacing: 2
+                spacing: 3
 
                 Slider {
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -241,22 +251,33 @@ Item {
                     onMoved: engine.seek(value)
                 }
 
-                Text {
+                Row {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    function fmt(ms) {
-                        var s = Math.floor(ms / 1000);
-                        var m = Math.floor(s / 60);
-                        return m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+                    spacing: 16
+
+                    Text {
+                        function fmt(ms) {
+                            var s = Math.floor(ms / 1000);
+                            var m = Math.floor(s / 60);
+                            return m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+                        }
+                        text: fmt(engine.position) + " / " + fmt(engine.duration)
+                        color: "#00ff66"
+                        font.family: "Monospace"
+                        font.bold: true
+                        font.pixelSize: 16
                     }
-                    text: fmt(engine.position) + " / " + fmt(engine.duration)
-                    color: "#00ff66"
-                    font.family: "Monospace"
-                    font.bold: true
-                    font.pixelSize: 17
+
+                    Text {
+                        text: "🔊 " + engine.currentVolume + "%"
+                        color: "#00d2ff"
+                        font.bold: true
+                        font.pixelSize: 15
+                    }
                 }
             }
 
-            // 3. MASSIVE BOTTOM COCKPIT (Fills the bottom 45% void!)
+            // 3. FULL BOTTOM COCKPIT (VOL - / PLAY / VOL +)
             Rectangle {
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 10
@@ -272,22 +293,22 @@ Item {
                     anchors.centerIn: parent
                     spacing: 8
 
-                    // -15s Button
+                    // Hardware Volume Down
                     Rectangle {
                         width: 74; height: 72; radius: 14
-                        color: btnMinus.pressed ? "#444455" : "#222234"
+                        color: btnVolDown.pressed ? "#444455" : "#222234"
                         border.color: "#343448"
                         border.width: 1
 
-                        Text { anchors.centerIn: parent; text: "-15s"; color: "#ffffff"; font.bold: true; font.pixelSize: 18 }
+                        Text { anchors.centerIn: parent; text: "🔉 VOL-"; color: "#ffffff"; font.bold: true; font.pixelSize: 15 }
                         MouseArea {
-                            id: btnMinus
+                            id: btnVolDown
                             anchors.fill: parent
-                            onClicked: { engine.buzz(25); engine.skip(-15); }
+                            onClicked: engine.volumeDown()
                         }
                     }
 
-                    // Massive Play/Pause Slab
+                    // Giant Play/Pause Slab
                     Rectangle {
                         width: 132; height: 72; radius: 16
                         color: btnPlay.pressed ? "#1ea852" : "#00ff66"
@@ -302,22 +323,25 @@ Item {
                         MouseArea {
                             id: btnPlay
                             anchors.fill: parent
-                            onClicked: { engine.buzz(45); engine.togglePlayPause(); }
+                            onClicked: {
+                                engine.buzz(45);
+                                engine.togglePlayPause();
+                            }
                         }
                     }
 
-                    // +30s Button
+                    // Hardware Volume Up
                     Rectangle {
                         width: 74; height: 72; radius: 14
-                        color: btnPlus.pressed ? "#444455" : "#222234"
+                        color: btnVolUp.pressed ? "#444455" : "#222234"
                         border.color: "#343448"
                         border.width: 1
 
-                        Text { anchors.centerIn: parent; text: "+30s"; color: "#ffffff"; font.bold: true; font.pixelSize: 18 }
+                        Text { anchors.centerIn: parent; text: "🔊 VOL+"; color: "#ffffff"; font.bold: true; font.pixelSize: 15 }
                         MouseArea {
-                            id: btnPlus
+                            id: btnVolUp
                             anchors.fill: parent
-                            onClicked: { engine.buzz(25); engine.skip(30); }
+                            onClicked: engine.volumeUp()
                         }
                     }
                 }
@@ -348,7 +372,6 @@ Item {
                         font.pixelSize: 22
                     }
 
-                    // MASSIVE SOLID CYAN SEARCH BAR
                     Rectangle {
                         width: parent.width
                         height: 64
@@ -538,6 +561,7 @@ Item {
                             }
                         }
 
+                        // Play/Download Button + Long Press to Delete
                         Rectangle {
                             anchors.right: parent.right
                             anchors.rightMargin: 6
@@ -567,11 +591,95 @@ Item {
                                         engine.downloadEpisode(root.currentShowTitle, modelData.title, modelData.audioUrl);
                                     }
                                 }
+                                onPressAndHold: {
+                                    if (modelData.isDownloaded) {
+                                        engine.buzz(50);
+                                        root.deleteShowTitle = root.currentShowTitle;
+                                        root.deleteEpTitle = modelData.title;
+                                        deleteConfirmOverlay.visible = true;
+                                    }
+                                }
                             }
                         }
                     }
                 }
                 Item { width: 1; height: 40 }
+            }
+        }
+    }
+
+    // LONG-PRESS DELETE CONFIRMATION MODAL
+    Rectangle {
+        id: deleteConfirmOverlay
+        anchors.fill: parent
+        color: "#d9000000"
+        visible: false
+        z: 99
+
+        Rectangle {
+            width: 280
+            height: 190
+            radius: 16
+            color: "#181822"
+            border.color: "#ff4444"
+            border.width: 2
+            anchors.centerIn: parent
+
+            Column {
+                anchors.centerIn: parent
+                spacing: 10
+                width: parent.width - 24
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: "DELETE EPISODE?"
+                    color: "#ff4444"
+                    font.bold: true
+                    font.pixelSize: 15
+                }
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: root.deleteEpTitle
+                    color: "#ffffff"
+                    font.bold: true
+                    font.pixelSize: 13
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    maximumLineCount: 2
+                    wrapMode: Text.Wrap
+                    elide: Text.ElideRight
+                }
+
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 12
+
+                    Rectangle {
+                        width: 90; height: 40; radius: 8; color: "#333344"
+                        Text { anchors.centerIn: parent; text: "Cancel"; color: "#fff"; font.bold: true; font.pixelSize: 14 }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                engine.buzz(20);
+                                deleteConfirmOverlay.visible = false;
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 90; height: 40; radius: 8; color: "#ff4444"
+                        Text { anchors.centerIn: parent; text: "Delete"; color: "#000"; font.bold: true; font.pixelSize: 14 }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                engine.buzz(45);
+                                engine.deleteDownloadedEpisode(root.deleteShowTitle, root.deleteEpTitle);
+                                deleteConfirmOverlay.visible = false;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -583,7 +691,7 @@ Item {
         onAccepted: function(queryText) {
             if (queryText.trim().length > 0) {
                 engine.search(queryText.trim());
-                swipeView.currentIndex = 2; // Jump to Search results!
+                swipeView.currentIndex = 2;
             }
         }
     }
