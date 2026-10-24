@@ -43,9 +43,14 @@ Item {
         return charBanks[currentMode + 1];
     }
 
+    // Native AsteroidOS Deep Teal Background
     Rectangle {
         anchors.fill: parent
-        color: "#000000"
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#0c2430" }
+            GradientStop { position: 0.7; color: "#06131a" }
+            GradientStop { position: 1.0; color: "#02070a" }
+        }
     }
 
     // ==========================================
@@ -64,8 +69,8 @@ Item {
         Repeater {
             model: keyboardRoot.currentChars().length
             delegate: Item {
-                width: 36
-                height: 36
+                width: 34
+                height: 34
                 
                 property real angleDeg: (index / keyboardRoot.currentChars().length) * 360.0 - 90.0
                 property real angleRad: angleDeg * (Math.PI / 180.0)
@@ -77,7 +82,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: parent.ch
-                    color: (keyboardRoot.activeHoverChar === parent.ch) ? "#00ff66" : "#ffffff"
+                    color: (keyboardRoot.activeHoverChar === parent.ch) ? "#00ffcc" : "#ffffff"
                     font.bold: true
                     font.pixelSize: (keyboardRoot.activeHoverChar === parent.ch) ? 34 : 17
                     font.family: "Monospace"
@@ -103,7 +108,7 @@ Item {
             var dy = mouse.y - 200;
             var dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Ring touch zone strictly on outer rim (135px to 205px)
+            // Ring touch zone strictly on outer rim
             if (dist >= 135 && dist <= 205) {
                 keyboardRoot.isScrubbing = true;
                 
@@ -116,7 +121,7 @@ Item {
 
                 if (newChar !== keyboardRoot.activeHoverChar) {
                     keyboardRoot.activeHoverChar = newChar;
-                    keyboardRoot.hapticPulse(25); // Stronger 25ms tick
+                    keyboardRoot.hapticPulse(25);
                 }
             } else {
                 keyboardRoot.isScrubbing = false;
@@ -142,187 +147,141 @@ Item {
     }
 
     // ==========================================
-    // 3. CURVED CENTER CONTROL HUB (Z=10, 100% TOUCH PRIORITY)
+    // 3. CIRCULAR CENTER CONTROL HUB (ASTEROID STYLE)
     // ==========================================
     Rectangle {
         id: centerHub
-        width: 270
-        height: 270
-        radius: 135
+        width: 240
+        height: 240
+        radius: 120
         anchors.centerIn: parent
-        color: "#0d0d12"
+        color: "#0a1820"
         border.color: "#00d2ff"
         border.width: 2
-        clip: true
         z: 10
 
-        // TOP: Text preview & Lens
         Column {
-            anchors.top: parent.top
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width
-            spacing: 0
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 6
 
             // Header: Dial Bank + Page Dots
-            Rectangle {
-                width: parent.width
-                height: 38
-                color: "#181824"
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 8
+
+                Text {
+                    text: keyboardRoot.bankNames[keyboardRoot.currentMode + 1]
+                    color: "#00d2ff"
+                    font.bold: true
+                    font.pixelSize: 12
+                }
 
                 Row {
-                    anchors.centerIn: parent
-                    spacing: 8
-
-                    Text {
-                        text: keyboardRoot.bankNames[keyboardRoot.currentMode + 1]
-                        color: "#00d2ff"
-                        font.bold: true
-                        font.pixelSize: 13
-                    }
-
-                    Row {
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 4
-                        Repeater {
-                            model: 4
-                            Rectangle {
-                                width: (index - 1 === keyboardRoot.currentMode) ? 14 : 5
-                                height: 5
-                                radius: 2.5
-                                color: (index - 1 === keyboardRoot.currentMode) ? "#00ff66" : "#ffffff"
-                            }
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 4
+                    Repeater {
+                        model: 4
+                        Rectangle {
+                            width: (index - 1 === keyboardRoot.currentMode) ? 14 : 5
+                            height: 5
+                            radius: 2.5
+                            color: (index - 1 === keyboardRoot.currentMode) ? "#00ffcc" : "#ffffff"
                         }
                     }
                 }
             }
 
-            // High-Contrast Output Box
+            // Output Box
             Rectangle {
-                width: parent.width
-                height: 42
-                color: "#000000"
+                width: parent.width - 20
+                height: 36
+                anchors.horizontalCenter: parent.horizontalCenter
+                color: "#050d12"
+                radius: 18
+                border.color: "#163442"
 
                 Text {
                     anchors.centerIn: parent
-                    width: parent.width - 24
-                    text: keyboardRoot.text.length > 0 ? keyboardRoot.text : "TOUCH RIM TO TYPE"
-                    color: keyboardRoot.text.length > 0 ? "#00ff66" : "#00d2ff"
-                    font.pixelSize: 18
+                    width: parent.width - 20
+                    text: keyboardRoot.text.length > 0 ? keyboardRoot.text : "Touch rim to type..."
+                    color: keyboardRoot.text.length > 0 ? "#00ffcc" : "#6ea0b5"
+                    font.pixelSize: 15
                     font.bold: true
                     elide: Text.ElideLeft
                     horizontalAlignment: Text.AlignHCenter
                 }
             }
 
-            // The Magnifier Lens
+            // Lens & Swipe Guide
             Rectangle {
-                width: parent.width
-                height: 44
-                color: keyboardRoot.isScrubbing ? "#2c123a" : "#0d0d12"
+                width: parent.width - 20
+                height: 38
+                anchors.horizontalCenter: parent.horizontalCenter
+                color: "transparent"
 
                 Text {
                     anchors.centerIn: parent
-                    text: keyboardRoot.activeHoverChar.length > 0 ? keyboardRoot.activeHoverChar : "◄ SWIPE HERE TO FLIP ►"
-                    color: keyboardRoot.isScrubbing ? "#00ff66" : "#ffffff"
+                    text: keyboardRoot.activeHoverChar.length > 0 ? keyboardRoot.activeHoverChar : "◄ Swipe Hub to Flip ►"
+                    color: keyboardRoot.isScrubbing ? "#00ffcc" : "#ffffff"
                     font.bold: true
-                    font.pixelSize: keyboardRoot.isScrubbing ? 38 : 12
+                    font.pixelSize: keyboardRoot.isScrubbing ? 34 : 11
                 }
             }
-        }
 
-        // BOTTOM: CURVED BUTTON COCKPIT (Hugs the bottom arc flush!)
-        Rectangle {
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: 146
-            color: "#121218"
+            // CIRCULAR WIREFRAME BUTTON PANEL (MATCHING ASTEROID OS!)
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 16
 
-            Column {
-                anchors.fill: parent
-
-                // Row 1: Backspace & Space (Height 64px)
-                Row {
-                    width: parent.width
-                    height: 64
-
-                    // Giant Backspace Button
-                    Rectangle {
-                        width: parent.width / 2
-                        height: parent.height
-                        color: delMouse.pressed ? "#991111" : "#551111"
-                        border.color: "#772222"
-                        border.width: 1
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "⌫ DEL"
-                            color: "#ffffff"
-                            font.bold: true
-                            font.pixelSize: 19
-                        }
-
-                        MouseArea {
-                            id: delMouse
-                            anchors.fill: parent
-                            z: 20
-                            onClicked: {
-                                keyboardRoot.hapticPulse(35);
-                                if (keyboardRoot.text.length > 0) {
-                                    keyboardRoot.text = keyboardRoot.text.substring(0, keyboardRoot.text.length - 1);
-                                }
-                            }
-                        }
-                    }
-
-                    // Giant Space Button
-                    Rectangle {
-                        width: parent.width / 2
-                        height: parent.height
-                        color: spaceMouse.pressed ? "#444455" : "#242432"
-                        border.color: "#343444"
-                        border.width: 1
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "␣ SPACE"
-                            color: "#ffffff"
-                            font.bold: true
-                            font.pixelSize: 19
-                        }
-
-                        MouseArea {
-                            id: spaceMouse
-                            anchors.fill: parent
-                            z: 20
-                            onClicked: {
-                                keyboardRoot.hapticPulse(25);
-                                keyboardRoot.text += " ";
-                            }
-                        }
-                    }
-                }
-
-                // Row 2: Giant Green SEARCH Bar (Curved bottom corners match centerHub circle!)
+                // 1. Circular Backspace (-)
                 Rectangle {
-                    width: parent.width
-                    height: 82
-                    radius: 135
-                    color: enterMouse.pressed ? "#1ea852" : "#00ff66"
+                    width: 52
+                    height: 52
+                    radius: 26
+                    color: delBtnMouse.pressed ? "#441a1a" : "transparent"
+                    border.color: "#ffffff"
+                    border.width: 2
 
                     Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.top: parent.top
-                        anchors.topMargin: 16
-                        text: "↵ SEARCH"
-                        color: "#000000"
-                        font.bold: true
+                        anchors.centerIn: parent
+                        text: "⌫"
+                        color: "#ffffff"
                         font.pixelSize: 22
                     }
 
                     MouseArea {
-                        id: enterMouse
+                        id: delBtnMouse
                         anchors.fill: parent
-                        z: 20
+                        onClicked: {
+                            keyboardRoot.hapticPulse(35);
+                            if (keyboardRoot.text.length > 0) {
+                                keyboardRoot.text = keyboardRoot.text.substring(0, keyboardRoot.text.length - 1);
+                            }
+                        }
+                    }
+                }
+
+                // 2. Circular Confirm (✓) - IDENTICAL TO IMAGE 1!
+                Rectangle {
+                    width: 60
+                    height: 60
+                    radius: 30
+                    color: okBtnMouse.pressed ? "#00ffcc" : "transparent"
+                    border.color: okBtnMouse.pressed ? "#00ffcc" : "#ffffff"
+                    border.width: 2.5
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✓"
+                        color: okBtnMouse.pressed ? "#000000" : "#ffffff"
+                        font.bold: true
+                        font.pixelSize: 28
+                    }
+
+                    MouseArea {
+                        id: okBtnMouse
+                        anchors.fill: parent
                         onClicked: {
                             keyboardRoot.hapticPulse(50);
                             keyboardRoot.accepted(keyboardRoot.text);
@@ -330,22 +289,45 @@ Item {
                         }
                     }
                 }
+
+                // 3. Circular Space (␣)
+                Rectangle {
+                    width: 52
+                    height: 52
+                    radius: 26
+                    color: spaceBtnMouse.pressed ? "#163442" : "transparent"
+                    border.color: "#ffffff"
+                    border.width: 2
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "␣"
+                        color: "#ffffff"
+                        font.pixelSize: 22
+                    }
+
+                    MouseArea {
+                        id: spaceBtnMouse
+                        anchors.fill: parent
+                        onClicked: {
+                            keyboardRoot.hapticPulse(25);
+                            keyboardRoot.text += " ";
+                        }
+                    }
+                }
             }
         }
 
-        // Swipe Detector
+        // Swipe Area (Top half of hub)
         MouseArea {
             id: hubSwipe
             width: parent.width
-            height: 124
+            height: 120
             anchors.top: parent.top
             z: 15
             property real startX: 0
 
-            onPressed: function(mouse) {
-                startX = mouse.x;
-            }
-
+            onPressed: function(mouse) { startX = mouse.x; }
             onReleased: function(mouse) {
                 var delta = mouse.x - startX;
                 if (Math.abs(delta) > 30) {
