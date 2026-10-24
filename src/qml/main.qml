@@ -10,7 +10,7 @@ Item {
     property string deleteShowTitle: ""
     property string deleteEpTitle: ""
 
-    // AsteroidOS Low-Poly Faceted Background
+    // Native AsteroidOS Low-Poly Faceted Background
     FacetedBackground { anchors.fill: parent }
 
     SwipeView {
@@ -46,9 +46,10 @@ Item {
                     // --- SECTION A: READY ON WATCH ---
                     Text {
                         text: "READY ON WATCH"
-                        color: "#00ffcc"
+                        color: "#ffffff"
+                        opacity: 0.6
                         font.bold: true
-                        font.pixelSize: 14
+                        font.pixelSize: 13
                         visible: engine.downloadedEpisodes.length > 0
                     }
 
@@ -73,29 +74,30 @@ Item {
                                 }
                                 Text {
                                     text: modelData.showTitle + " • " + modelData.sizeMB
-                                    color: "#00d2ff"
+                                    color: "#ffffff"
+                                    opacity: 0.6
                                     font.pixelSize: 13
                                     elide: Text.ElideRight
                                     width: parent.width
                                 }
                             }
 
-                            // Circular Play Button (Asteroid OS Image 2 Style!)
+                            // Circular Play Button (Asteroid OS Image 2 Style)
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 50
                                 height: 50
                                 radius: 25
-                                color: playBtnMouse.pressed ? "#00ffcc" : "transparent"
-                                border.color: playBtnMouse.pressed ? "#00ffcc" : "#ffffff"
+                                color: playBtnMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
+                                border.color: "#ffffff"
                                 border.width: 2
 
                                 Text {
                                     anchors.centerIn: parent
                                     anchors.horizontalCenterOffset: 2
                                     text: "▶"
-                                    color: playBtnMouse.pressed ? "#000000" : "#ffffff"
+                                    color: "#ffffff"
                                     font.pixelSize: 20
                                 }
 
@@ -123,9 +125,10 @@ Item {
                     // --- SECTION B: CHANNELS ---
                     Text {
                         text: "CHANNELS"
-                        color: "#00d2ff"
+                        color: "#ffffff"
+                        opacity: 0.6
                         font.bold: true
-                        font.pixelSize: 14
+                        font.pixelSize: 13
                         visible: engine.subscriptions.length > 0
                     }
 
@@ -163,14 +166,14 @@ Item {
                                 width: 44
                                 height: 44
                                 radius: 22
-                                color: unsubMouse.pressed ? "#ff4444" : "transparent"
+                                color: unsubMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
                                 border.color: "#ffffff"
                                 border.width: 2
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "✕"
-                                    color: unsubMouse.pressed ? "#000" : "#ffffff"
+                                    color: "#ffffff"
                                     font.pixelSize: 18
                                 }
 
@@ -191,7 +194,7 @@ Item {
         }
 
         // ==========================================
-        // SCREEN 1: NOW PLAYING (OSCILLATING TIMELINE & ASTERIOD CONTROLS)
+        // SCREEN 1: NOW PLAYING (EXACT IMAGE 2 & 3 PARITY)
         // ==========================================
         Item {
             // TOP: Track Title & Show (Matching Image 2)
@@ -218,20 +221,21 @@ Item {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "Radio Rental"
-                    color: "#b0d8e8"
+                    color: "#ffffff"
+                    opacity: 0.65
                     font.pixelSize: 16
                     elide: Text.ElideRight
                 }
             }
 
-            // EQUATOR: OSCILLATING FREQUENCY TIMELINE (CENTERED!)
+            // EQUATOR: OSCILLATING MONOCHROME FREQUENCY TIMELINE
             Item {
                 id: timelineEquator
                 anchors.centerIn: parent
                 width: parent.width - 40
                 height: 40
 
-                // Animated Audio Frequency Meter (Oscillates while playing!)
+                // Oscillating Frequency Bars (Pure White, Opacity Animated)
                 Row {
                     anchors.centerIn: parent
                     spacing: 4
@@ -243,7 +247,8 @@ Item {
                             width: 3
                             height: 6 + Math.abs(Math.sin((waveTimer.step + index * 0.4)) * 16)
                             radius: 1.5
-                            color: "#00ffcc"
+                            color: "#ffffff"
+                            opacity: 0.75
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
@@ -258,7 +263,6 @@ Item {
                     onTriggered: step += 0.3
                 }
 
-                // Base Timeline Slider
                 Slider {
                     anchors.centerIn: parent
                     width: parent.width
@@ -266,17 +270,17 @@ Item {
                     to: Math.max(1, engine.duration)
                     value: engine.position
                     onMoved: engine.seek(value)
-                    opacity: engine.playing ? 0.35 : 1.0 // Lets frequency wave shine through!
+                    opacity: engine.playing ? 0.3 : 0.9
                 }
 
-                // Pulsing dot at progress position
+                // Breathing Progress Indicator Dot
                 Rectangle {
                     x: (parent.width - 12) * (engine.duration > 0 ? (engine.position / engine.duration) : 0)
                     anchors.verticalCenter: parent.verticalCenter
                     width: 12
                     height: 12
                     radius: 6
-                    color: "#00ffcc"
+                    color: "#ffffff"
                     visible: engine.playing
 
                     SequentialAnimation on scale {
@@ -297,14 +301,14 @@ Item {
                         return m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
                     }
                     text: fmt(engine.position) + " / " + fmt(engine.duration)
-                    color: "#00ffcc"
+                    color: "#ffffff"
                     font.family: "Monospace"
                     font.bold: true
                     font.pixelSize: 14
                 }
             }
 
-            // BOTTOM CONTROLS: EXACT ASTERIOD IMAGE 2 & 3 STYLE
+            // BOTTOM CONTROLS: EXACT IMAGE 2 & 3 STYLE
             Row {
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 25
@@ -316,14 +320,14 @@ Item {
                     width: 64
                     height: 64
                     radius: 32
-                    color: volDownMouse.pressed ? "#00ffcc" : "transparent"
-                    border.color: volDownMouse.pressed ? "#00ffcc" : "#ffffff"
+                    color: volDownMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
+                    border.color: "#ffffff"
                     border.width: 2.5
 
                     Text {
                         anchors.centerIn: parent
                         text: "−"
-                        color: volDownMouse.pressed ? "#000000" : "#ffffff"
+                        color: "#ffffff"
                         font.pixelSize: 32
                     }
 
@@ -361,14 +365,14 @@ Item {
                     width: 64
                     height: 64
                     radius: 32
-                    color: volUpMouse.pressed ? "#00ffcc" : "transparent"
-                    border.color: volUpMouse.pressed ? "#00ffcc" : "#ffffff"
+                    color: volUpMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
+                    border.color: "#ffffff"
                     border.width: 2.5
 
                     Text {
                         anchors.centerIn: parent
                         text: "+"
-                        color: volUpMouse.pressed ? "#000000" : "#ffffff"
+                        color: "#ffffff"
                         font.pixelSize: 32
                     }
 
@@ -405,23 +409,23 @@ Item {
                         font.pixelSize: 24
                     }
 
-                    // Circular Outline Search Target
+                    // Pure White Wireframe Search Bar
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: parent.width - 10
                         height: 56
                         radius: 28
-                        color: searchBtnMouse.pressed ? "#00ffcc" : "transparent"
-                        border.color: searchBtnMouse.pressed ? "#00ffcc" : "#ffffff"
+                        color: searchBtnMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
+                        border.color: "#ffffff"
                         border.width: 2
 
                         Row {
                             anchors.centerIn: parent
                             spacing: 8
-                            Text { text: "🔍"; font.pixelSize: 18 }
+                            Text { text: "🔍"; font.pixelSize: 18; color: "#ffffff" }
                             Text {
                                 text: "SEARCH PODCASTS"
-                                color: searchBtnMouse.pressed ? "#000" : "#ffffff"
+                                color: "#ffffff"
                                 font.bold: true
                                 font.pixelSize: 15
                             }
@@ -438,8 +442,9 @@ Item {
                     }
 
                     Text {
-                        text: engine.searching ? "Searching Apple Directory..." : (engine.searchResults.length > 0 ? "RESULTS" : "")
-                        color: "#00ffcc"
+                        text: engine.searching ? "Searching..." : (engine.searchResults.length > 0 ? "RESULTS" : "")
+                        color: "#ffffff"
+                        opacity: 0.65
                         font.bold: true
                         font.pixelSize: 14
                     }
@@ -465,28 +470,29 @@ Item {
                                 }
                                 Text {
                                     text: modelData.artist
-                                    color: "#00d2ff"
+                                    color: "#ffffff"
+                                    opacity: 0.6
                                     font.pixelSize: 13
                                     elide: Text.ElideRight
                                     width: parent.width
                                 }
                             }
 
-                            // Circular (+) Subscribe Button
+                            // Circular (+) Subscribe Wireframe
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 48
                                 height: 48
                                 radius: 24
-                                color: subMouse.pressed ? "#00ffcc" : "transparent"
+                                color: subMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
                                 border.color: "#ffffff"
                                 border.width: 2
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "+"
-                                    color: subMouse.pressed ? "#000" : "#ffffff"
+                                    color: "#ffffff"
                                     font.bold: true
                                     font.pixelSize: 26
                                 }
@@ -510,7 +516,7 @@ Item {
     }
 
     // ==========================================
-    // EPISODE LIST OVERLAY (CENTERED TOP BACK BUTTON!)
+    // EPISODE LIST OVERLAY (CENTERED BACK BUTTON)
     // ==========================================
     Rectangle {
         id: episodeOverlay
@@ -534,13 +540,12 @@ Item {
                 width: parent.width
                 spacing: 12
 
-                // TOP CENTERED BACK BUTTON & TITLE (No More Corner Clipping!)
+                // TOP CENTERED BACK BUTTON & TITLE
                 Column {
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: 6
                     width: parent.width
 
-                    // Circular Back Button centered at top
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: 48
@@ -576,25 +581,25 @@ Item {
                     }
                 }
 
-                // Download Progress Banner
+                // Download Progress
                 Rectangle {
                     width: parent.width
-                    height: 22
-                    color: "#0a1820"
-                    radius: 11
+                    height: 20
+                    color: "rgba(255, 255, 255, 0.15)"
+                    radius: 10
                     visible: engine.downloading
 
                     Rectangle {
                         height: parent.height
                         width: parent.width * (engine.downloadProgress / 100.0)
-                        color: "#00ffcc"
-                        radius: 11
+                        color: "#ffffff"
+                        radius: 10
                     }
                     Text {
                         anchors.centerIn: parent
                         text: "Downloading " + engine.downloadProgress + "%"
                         color: "#000000"
-                        font.pixelSize: 12
+                        font.pixelSize: 11
                         font.bold: true
                     }
                 }
@@ -620,19 +625,20 @@ Item {
                             }
                             Text {
                                 text: modelData.isDownloaded ? "On Watch" : "Cloud"
-                                color: modelData.isDownloaded ? "#00ffcc" : "#6ea0b5"
+                                color: "#ffffff"
+                                opacity: modelData.isDownloaded ? 1.0 : 0.5
                                 font.pixelSize: 13
                             }
                         }
 
-                        // Circular Action Button (Asteroid OS Style!)
+                        // Circular Action Button (▶ or ⬇)
                         Rectangle {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             width: 50
                             height: 50
                             radius: 25
-                            color: epActionMouse.pressed ? "#00ffcc" : "transparent"
+                            color: epActionMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
                             border.color: "#ffffff"
                             border.width: 2
 
@@ -640,7 +646,7 @@ Item {
                                 anchors.centerIn: parent
                                 anchors.horizontalCenterOffset: modelData.isDownloaded ? 2 : 0
                                 text: modelData.isDownloaded ? "▶" : "⬇"
-                                color: epActionMouse.pressed ? "#000" : "#ffffff"
+                                color: "#ffffff"
                                 font.pixelSize: 20
                             }
 
@@ -689,7 +695,7 @@ Item {
             height: 200
             radius: 130
             color: "#081d28"
-            border.color: "#ff4444"
+            border.color: "#ffffff"
             border.width: 2
             anchors.centerIn: parent
 
@@ -701,7 +707,7 @@ Item {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "DELETE EPISODE?"
-                    color: "#ff4444"
+                    color: "#ffffff"
                     font.bold: true
                     font.pixelSize: 15
                 }
@@ -710,7 +716,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: root.deleteEpTitle
                     color: "#ffffff"
-                    font.bold: true
+                    opacity: 0.8
                     font.pixelSize: 14
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
@@ -741,9 +747,9 @@ Item {
                     Rectangle {
                         width: 52; height: 52; radius: 26
                         color: "transparent"
-                        border.color: "#ff4444"
+                        border.color: "#ffffff"
                         border.width: 2
-                        Text { anchors.centerIn: parent; text: "✓"; color: "#ff4444"; font.pixelSize: 26; font.bold: true }
+                        Text { anchors.centerIn: parent; text: "✓"; color: "#fff"; font.pixelSize: 26; font.bold: true }
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
