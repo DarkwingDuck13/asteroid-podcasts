@@ -8,6 +8,7 @@
 #include <QMediaPlayer>
 #include <QAudioOutput>
 #include <QFile>
+#include <QTimer>
 
 class PodcastEngine : public QObject {
     Q_OBJECT
@@ -20,11 +21,12 @@ class PodcastEngine : public QObject {
     Q_PROPERTY(int downloadProgress READ downloadProgress NOTIFY downloadProgressChanged)
     Q_PROPERTY(bool downloading READ isDownloading NOTIFY downloadingChanged)
 
-    // Player Properties
+    // Player & State Properties
     Q_PROPERTY(bool playing READ isPlaying NOTIFY playingChanged)
     Q_PROPERTY(qint64 position READ position NOTIFY positionChanged)
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
     Q_PROPERTY(QString currentTrackTitle READ currentTrackTitle NOTIFY currentTrackTitleChanged)
+    Q_PROPERTY(int currentVolume READ currentVolume NOTIFY volumeChanged)
 
 public:
     explicit PodcastEngine(QObject *parent = nullptr);
@@ -43,6 +45,7 @@ public:
     qint64 position() const { return m_player->position(); }
     qint64 duration() const { return m_player->duration(); }
     QString currentTrackTitle() const { return m_currentTrackTitle; }
+    int currentVolume() const { return m_currentVolume; }
 
     Q_INVOKABLE void search(const QString &term);
     Q_INVOKABLE void subscribe(const QString &title, const QString &feedUrl);
@@ -52,14 +55,16 @@ public:
     Q_INVOKABLE void deleteDownloadedEpisode(const QString &showTitle, const QString &epTitle);
     Q_INVOKABLE void refreshDownloads();
     
-    // Playback Controls
+    // Playback & Hardware Volume Controls
     Q_INVOKABLE void playEpisode(const QString &showTitle, const QString &epTitle);
-    Q_INVOKABLE void playDirectFile(const QString &filePath, const QString &title);
+    Q_INVOKABLE void playDirectFile(const QString &filePath, const QString &title, qint64 startPos = 0);
     Q_INVOKABLE void togglePlayPause();
     Q_INVOKABLE void seek(qint64 pos);
     Q_INVOKABLE void skip(int seconds);
+    Q_INVOKABLE void volumeUp();
+    Q_INVOKABLE void volumeDown();
 
-    // Haptics
+    // Haptics & Power
     Q_INVOKABLE void buzz(int ms = 25);
 
 signals:
@@ -75,17 +80,22 @@ signals:
     void positionChanged();
     void durationChanged();
     void currentTrackTitleChanged();
+    void volumeChanged();
 
 private slots:
     void onSearchFinished();
     void onFeedFinished();
     void onDownloadProgress(qint64 received, qint64 total);
     void onDownloadFinished();
+    void onPlaybackStateChanged(QMediaPlayer::PlaybackState state);
+    void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
+    void autoSaveState();
 
 private:
     QNetworkAccessManager *m_net;
     QMediaPlayer *m_player;
     QAudioOutput *m_audioOutput;
+    QTimer *m_saveTimer;
 
     QVariantList m_subscriptions;
     QVariantList m_searchResults;
@@ -96,16 +106,25 @@ private:
     bool m_isLoadingEpisodes = false;
     bool m_isDownloading = false;
     int m_downloadProgress = 0;
+    int m_currentVolume = 75;
 
     QString m_currentTrackTitle;
+    QString m_currentShowTitle;
+    QString m_currentFilePath;
     QString m_currentShowLoading;
     QString m_storagePath;
+    qint64 m_resumeSeekPos = 0;
 
     QNetworkReply *m_currentDownloadReply = nullptr;
     QFile *m_currentDownloadFile = nullptr;
 
     void loadSubscriptions();
     void saveSubscriptions();
+    void loadLastState();
+    void saveCurrentState();
+    void acquireWakeLock();
+    void releaseWakeLock();
+    void refreshVolume();
     QString sanitizeFilename(const QString &name);
     QString episodeFilePath(const QString &showTitle, const QString &epTitle);
 };
