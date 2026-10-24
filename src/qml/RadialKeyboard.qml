@@ -45,10 +45,10 @@ Item {
         return charBanks[currentMode + 1];
     }
 
-    // Low-poly faceted background
+    // Native Low-poly faceted background
     FacetedBackground { anchors.fill: parent }
 
-    // Dim overlay
+    // Dim vignette
     Rectangle {
         anchors.fill: parent
         color: "#bf000000"
@@ -59,11 +59,11 @@ Item {
     // ==========================================
     Text {
         anchors.top: parent.top
-        anchors.topMargin: 2
+        anchors.topMargin: 4
         anchors.horizontalCenter: parent.horizontalCenter
         text: "▼"
-        color: "#00ffcc"
-        font.pixelSize: 13
+        color: "#ffffff"
+        font.pixelSize: 12
         z: 30
     }
 
@@ -83,7 +83,6 @@ Item {
                 width: 36
                 height: 36
                 
-                // Position around the 168px radius rim
                 property real baseAngleDeg: (index / keyboardRoot.currentChars().length) * 360.0 - 90.0
                 property real angleRad: baseAngleDeg * (Math.PI / 180.0)
                 property string ch: keyboardRoot.currentChars()[index]
@@ -91,7 +90,7 @@ Item {
                 x: 200 + 168 * Math.cos(angleRad) - width / 2
                 y: 200 + 168 * Math.sin(angleRad) - height / 2
 
-                // Calculate angular distance to the 12:00 aperture (-90 degrees)
+                // Calculate angular distance to 12:00 aperture
                 property real effectiveAngle: (baseAngleDeg + keyboardRoot.dialRotation + 90.0) % 360.0
                 property real normalizedAngle: (effectiveAngle < 0 ? effectiveAngle + 360.0 : effectiveAngle)
                 property real distToTop: Math.min(normalizedAngle, 360.0 - normalizedAngle)
@@ -100,24 +99,27 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: parent.ch
-                    color: parent.isAtTop ? "#00ffcc" : (parent.distToTop < 45 ? "#ffffff" : "#99bacc")
-                    font.bold: true
-                    font.pixelSize: parent.isAtTop ? 36 : (parent.distToTop < 45 ? 20 : 16)
+                    // Pure white: size and opacity indicate selection!
+                    color: "#ffffff"
+                    opacity: parent.isAtTop ? 1.0 : (parent.distToTop < 45 ? 0.7 : 0.4)
+                    font.bold: parent.isAtTop
+                    font.pixelSize: parent.isAtTop ? 38 : (parent.distToTop < 45 ? 20 : 16)
                     font.family: "Monospace"
 
                     Behavior on font.pixelSize { NumberAnimation { duration: 60 } }
+                    Behavior on opacity { NumberAnimation { duration: 60 } }
                 }
             }
         }
     }
 
     // ==========================================
-    // 3. DIAL TOUCH & FLICK PHYSICS (ANYWHERE ON RIM / 6:00 THUMB)
+    // 3. DIAL TOUCH & FLICK INERTIA (6:00 THUMB SWEEP)
     // ==========================================
     MouseArea {
         id: rimTouch
         anchors.fill: parent
-        z: 1 // Lowest layer
+        z: 1
 
         property real lastAngle: 0
         property real angularVelocity: 0
@@ -138,7 +140,6 @@ Item {
             var curAngle = getAngle(mouse);
             var delta = curAngle - lastAngle;
 
-            // Handle 180/-180 wrap
             if (delta > 180) delta -= 360;
             if (delta < -180) delta += 360;
 
@@ -146,18 +147,17 @@ Item {
             angularVelocity = delta;
             lastAngle = curAngle;
 
-            // Update selected character at 12:00
             updateSelection();
         }
 
         onReleased: function(mouse) {
-            // Commit the selected letter at 12:00 on release!
+            // Commit selected letter on lift-off
             if (keyboardRoot.selectedChar.length > 0) {
                 keyboardRoot.hapticPulse(35);
                 keyboardRoot.text += keyboardRoot.selectedChar;
             }
 
-            // Start kinetic flick spin
+            // Kinetic flick spin
             if (Math.abs(angularVelocity) > 2) {
                 inertiaAnim.from = keyboardRoot.dialRotation;
                 inertiaAnim.to = keyboardRoot.dialRotation + (angularVelocity * 10);
@@ -168,7 +168,6 @@ Item {
         function updateSelection() {
             var chars = keyboardRoot.currentChars();
             var step = 360.0 / chars.length;
-            // Calculate which index is sitting at -90 deg (12:00)
             var rot = (-keyboardRoot.dialRotation) % 360.0;
             if (rot < 0) rot += 360.0;
 
@@ -176,7 +175,7 @@ Item {
             if (idx !== keyboardRoot.selectedIndex) {
                 keyboardRoot.selectedIndex = idx;
                 keyboardRoot.selectedChar = chars[idx];
-                keyboardRoot.hapticPulse(25); // Mechanical tactile click!
+                keyboardRoot.hapticPulse(25); // Mechanical tick
             }
         }
     }
@@ -193,7 +192,7 @@ Item {
     }
 
     // ==========================================
-    // 4. CLEAN CENTER HUB (NO BLUE CIRCLE, PURE FLOATING UI)
+    // 4. CLEAN CENTER HUB (PURE MONOCHROME ASTEROID OS)
     // ==========================================
     Item {
         anchors.centerIn: parent
@@ -203,16 +202,16 @@ Item {
 
         Column {
             anchors.fill: parent
-            spacing: 8
+            spacing: 12
 
-            // Top Header: Shifted Up
+            // Top Header: Active Bank Label + Dots (Shifted Up)
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 8
 
                 Text {
                     text: keyboardRoot.bankNames[keyboardRoot.currentMode + 1]
-                    color: "#00d2ff"
+                    color: "#ffffff"
                     font.bold: true
                     font.pixelSize: 13
                 }
@@ -226,27 +225,28 @@ Item {
                             width: (index - 1 === keyboardRoot.currentMode) ? 14 : 5
                             height: 5
                             radius: 2.5
-                            color: (index - 1 === keyboardRoot.currentMode) ? "#00ffcc" : "#66ffffff"
+                            color: "#ffffff"
+                            opacity: (index - 1 === keyboardRoot.currentMode) ? 1.0 : 0.35
                         }
                     }
                 }
             }
 
-            // Pure Floating Text Input (No Box, Enlarged 22px Font)
+            // Pure Floating Text (No box, enlarged 24px bold font)
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: parent.width - 20
-                text: keyboardRoot.text.length > 0 ? keyboardRoot.text : "Spin dial to type..."
-                color: keyboardRoot.text.length > 0 ? "#ffffff" : "#66b2cc"
-                font.pixelSize: 22
+                text: keyboardRoot.text.length > 0 ? keyboardRoot.text : " "
+                color: "#ffffff"
+                font.pixelSize: 24
                 font.bold: true
                 elide: Text.ElideLeft
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            Item { width: 1; height: 12 } // Spacer
+            Item { width: 1; height: 16 } // Spacer
 
-            // 3 Pure Circular Wireframe Action Buttons (Matching Image 1 & Image 3!)
+            // 3 Circular Wireframe Buttons (Pure White, Image 1 & 3 Parity)
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 20
@@ -256,7 +256,7 @@ Item {
                     width: 54
                     height: 54
                     radius: 27
-                    color: delBtnMouse.pressed ? "#441111" : "transparent"
+                    color: delBtnMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
                     border.color: "#ffffff"
                     border.width: 2
 
@@ -284,14 +284,14 @@ Item {
                     width: 64
                     height: 64
                     radius: 32
-                    color: okBtnMouse.pressed ? "#00ffcc" : "transparent"
-                    border.color: okBtnMouse.pressed ? "#00ffcc" : "#ffffff"
+                    color: okBtnMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
+                    border.color: "#ffffff"
                     border.width: 2.5
 
                     Text {
                         anchors.centerIn: parent
                         text: "✓"
-                        color: okBtnMouse.pressed ? "#000000" : "#ffffff"
+                        color: "#ffffff"
                         font.bold: true
                         font.pixelSize: 32
                     }
@@ -312,7 +312,7 @@ Item {
                     width: 54
                     height: 54
                     radius: 27
-                    color: spaceBtnMouse.pressed ? "#113344" : "transparent"
+                    color: spaceBtnMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
                     border.color: "#ffffff"
                     border.width: 2
 
@@ -339,7 +339,7 @@ Item {
         MouseArea {
             id: hubSwipe
             width: parent.width
-            height: 110
+            height: 120
             anchors.top: parent.top
             z: 15
             property real startX: 0
