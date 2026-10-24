@@ -320,3 +320,50 @@ Item {
                     height: 54
                     radius: 27
                     color: spaceBtnMouse.pressed ? "#40ffffff" : "transparent"
+                    border.color: "#ffffff"
+                    border.width: 2
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "␣"
+                        color: "#ffffff"
+                        font.pixelSize: 22
+                    }
+
+                    MouseArea {
+                        id: spaceBtnMouse
+                        anchors.fill: parent
+                        onClicked: {
+                            keyboardRoot.hapticPulse(25);
+                            keyboardRoot.text += " ";
+                        }
+                    }
+                }
+            }
+        }
+
+        // Center Swipe to Change Dial Banks
+        MouseArea {
+            id: hubSwipe
+            width: parent.width
+            height: 120
+            anchors.top: parent.top
+            z: 15
+            property real startX: 0
+
+            onPressed: function(mouse) { startX = mouse.x; }
+            onReleased: function(mouse) {
+                var delta = mouse.x - startX;
+                if (Math.abs(delta) > 30) {
+                    keyboardRoot.hapticPulse(35);
+                    if (delta < 0) {
+                        if (keyboardRoot.currentMode < 2) keyboardRoot.currentMode++;
+                    } else {
+                        if (keyboardRoot.currentMode > -1) keyboardRoot.currentMode--;
+                    }
+                    rimTouch.updateSelection();
+                }
+            }
+        }
+    }
+}
