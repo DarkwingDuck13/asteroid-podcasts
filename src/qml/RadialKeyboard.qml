@@ -1,3 +1,13 @@
+/*
+ * =====================================================================
+ * Part of the AsteroidOS Custom Software Suite
+ * Architecture, Engine & UI Engineering by Gemini (Google)
+ * Co-Developed & Tested on-device by DarkwingDuck13
+ *
+ * Platform: AsteroidOS (Linux / Qt6 / OpenEmbedded / TicWatch Pro)
+ * =====================================================================
+ */
+
 import QtQuick
 import QtQuick.Controls
 
@@ -99,7 +109,6 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     text: parent.ch
-                    // Pure white: size and opacity indicate selection!
                     color: "#ffffff"
                     opacity: parent.isAtTop ? 1.0 : (parent.distToTop < 45 ? 0.7 : 0.4)
                     font.bold: parent.isAtTop
@@ -151,13 +160,11 @@ Item {
         }
 
         onReleased: function(mouse) {
-            // Commit selected letter on lift-off
             if (keyboardRoot.selectedChar.length > 0) {
                 keyboardRoot.hapticPulse(35);
                 keyboardRoot.text += keyboardRoot.selectedChar;
             }
 
-            // Kinetic flick spin
             if (Math.abs(angularVelocity) > 2) {
                 inertiaAnim.from = keyboardRoot.dialRotation;
                 inertiaAnim.to = keyboardRoot.dialRotation + (angularVelocity * 10);
@@ -175,7 +182,7 @@ Item {
             if (idx !== keyboardRoot.selectedIndex) {
                 keyboardRoot.selectedIndex = idx;
                 keyboardRoot.selectedChar = chars[idx];
-                keyboardRoot.hapticPulse(25); // Mechanical tick
+                keyboardRoot.hapticPulse(25);
             }
         }
     }
@@ -256,7 +263,7 @@ Item {
                     width: 54
                     height: 54
                     radius: 27
-                    color: delBtnMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
+                    color: delBtnMouse.pressed ? "#40ffffff" : "transparent"
                     border.color: "#ffffff"
                     border.width: 2
 
@@ -284,7 +291,7 @@ Item {
                     width: 64
                     height: 64
                     radius: 32
-                    color: okBtnMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
+                    color: okBtnMouse.pressed ? "#40ffffff" : "transparent"
                     border.color: "#ffffff"
                     border.width: 2.5
 
@@ -312,51 +319,4 @@ Item {
                     width: 54
                     height: 54
                     radius: 27
-                    color: spaceBtnMouse.pressed ? "rgba(255, 255, 255, 0.25)" : "transparent"
-                    border.color: "#ffffff"
-                    border.width: 2
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "␣"
-                        color: "#ffffff"
-                        font.pixelSize: 22
-                    }
-
-                    MouseArea {
-                        id: spaceBtnMouse
-                        anchors.fill: parent
-                        onClicked: {
-                            keyboardRoot.hapticPulse(25);
-                            keyboardRoot.text += " ";
-                        }
-                    }
-                }
-            }
-        }
-
-        // Center Swipe to Change Dial Banks
-        MouseArea {
-            id: hubSwipe
-            width: parent.width
-            height: 120
-            anchors.top: parent.top
-            z: 15
-            property real startX: 0
-
-            onPressed: function(mouse) { startX = mouse.x; }
-            onReleased: function(mouse) {
-                var delta = mouse.x - startX;
-                if (Math.abs(delta) > 30) {
-                    keyboardRoot.hapticPulse(35);
-                    if (delta < 0) {
-                        if (keyboardRoot.currentMode < 2) keyboardRoot.currentMode++;
-                    } else {
-                        if (keyboardRoot.currentMode > -1) keyboardRoot.currentMode--;
-                    }
-                    rimTouch.updateSelection();
-                }
-            }
-        }
-    }
-}
+                    color: spaceBtnMouse.pressed ? "#40ffffff" : "transparent"
