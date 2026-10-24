@@ -10,13 +10,13 @@ Item {
     property string deleteShowTitle: ""
     property string deleteEpTitle: ""
 
-    // Native AsteroidOS Low-Poly Faceted Background
+    // Native AsteroidOS Faceted Low-Poly Background
     FacetedBackground { anchors.fill: parent }
 
     SwipeView {
         id: swipeView
         anchors.fill: parent
-        currentIndex: 1 // Opens to Player (Image 2 style)
+        currentIndex: 1 // Starts on Screen 1 (Player / Home)
         interactive: !radialOsk.visible && !deleteConfirmOverlay.visible
 
         // ==========================================
@@ -82,7 +82,7 @@ Item {
                                 }
                             }
 
-                            // Circular Play Button (Asteroid OS Image 2 Style)
+                            // Circular Play Button (Asteroid OS Style)
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
@@ -194,7 +194,7 @@ Item {
         }
 
         // ==========================================
-        // SCREEN 1: NOW PLAYING (EXACT IMAGE 2 & 3 PARITY)
+        // SCREEN 1: NOW PLAYING (OSCILLATING WAVEFORM TIMELINE)
         // ==========================================
         Item {
             // TOP: Track Title & Show (Matching Image 2)
@@ -228,66 +228,92 @@ Item {
                 }
             }
 
-            // EQUATOR: OSCILLATING MONOCHROME FREQUENCY TIMELINE
+            // EQUATOR: OSCILLATING SINE-WAVE TIMELINE & PULSING DOT
             Item {
-                id: timelineEquator
+                id: waveTimeline
                 anchors.centerIn: parent
-                width: parent.width - 40
-                height: 40
+                width: parent.width - 50
+                height: 50
 
-                // Oscillating Frequency Bars (Pure White, Opacity Animated)
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 4
-                    visible: engine.playing
+                property real progress: (engine.duration > 0) ? (engine.position / engine.duration) : 0
+                property real wavePhase: 0
+                property real waveAmp: engine.playing ? 10 : 0
 
-                    Repeater {
-                        model: 18
-                        Rectangle {
-                            width: 3
-                            height: 6 + Math.abs(Math.sin((waveTimer.step + index * 0.4)) * 16)
-                            radius: 1.5
-                            color: "#ffffff"
-                            opacity: 0.75
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
+                // Smoothly flattens the wave to a straight line on pause, ripples on play
+                Behavior on waveAmp {
+                    NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
                 }
 
                 Timer {
                     id: waveTimer
-                    property real step: 0
-                    interval: 60
-                    running: engine.playing
+                    interval: 33 // ~30 fps smooth wave motion
+                    running: engine.playing || waveTimeline.waveAmp > 0.1
                     repeat: true
-                    onTriggered: step += 0.3
+                    onTriggered: {
+                        waveTimeline.wavePhase += 0.14;
+                        waveCanvas.requestPaint();
+                    }
                 }
 
-                Slider {
-                    anchors.centerIn: parent
-                    width: parent.width
-                    from: 0
-                    to: Math.max(1, engine.duration)
-                    value: engine.position
-                    onMoved: engine.seek(value)
-                    opacity: engine.playing ? 0.3 : 0.9
+                Canvas {
+                    id: waveCanvas
+                    anchors.fill: parent
+
+                    onPaint: {
+                        var ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+
+                        var midY = height / 2;
+                        var amp = waveTimeline.waveAmp;
+                        var phase = waveTimeline.wavePhase;
+                        var progX = Math.max(0, Math.min(width, waveTimeline.progress * width));
+
+                        // 1. Draw Played Section of the Wave (Solid Bright White)
+                        ctx.lineWidth = 2.5;
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.beginPath();
+                        for (var x = 0; x <= progX; x += 2) {
+                            var y = midY + amp * Math.sin((x * 0.05) + phase);
+                            if (x === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        }
+                        ctx.stroke();
+
+                        // 2. Draw Remaining Unplayed Section (Subtle 35% White)
+                        ctx.lineWidth = 1.5;
+                        ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+                        ctx.beginPath();
+                        for (var x = progX; x <= width; x += 2) {
+                            var y = midY + amp * Math.sin((x * 0.05) + phase);
+                            if (x === progX) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        }
+                        ctx.stroke();
+
+                        // 3. Draw the Glowing Dot Riding the Wave Peak/Trough
+                        var dotY = midY + amp * Math.sin((progX * 0.05) + phase);
+
+                        // Outer Pulsing Halo
+                        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+                        ctx.beginPath();
+                        ctx.arc(progX, dotY, 7, 0, 2 * Math.PI);
+                        ctx.fill();
+
+                        // Inner Solid White Core
+                        ctx.fillStyle = "#ffffff";
+                        ctx.beginPath();
+                        ctx.arc(progX, dotY, 4, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
                 }
 
-                // Breathing Progress Indicator Dot
-                Rectangle {
-                    x: (parent.width - 12) * (engine.duration > 0 ? (engine.position / engine.duration) : 0)
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 12
-                    height: 12
-                    radius: 6
-                    color: "#ffffff"
-                    visible: engine.playing
-
-                    SequentialAnimation on scale {
-                        loops: Animation.Infinite
-                        running: engine.playing
-                        PropertyAnimation { to: 1.35; duration: 400 }
-                        PropertyAnimation { to: 1.0; duration: 400 }
+                // Touch/Tap to Seek on the Waveform
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: function(mouse) {
+                        var ratio = Math.max(0, Math.min(1, mouse.x / width));
+                        engine.seek(ratio * engine.duration);
+                        engine.buzz(20);
                     }
                 }
 
@@ -308,7 +334,7 @@ Item {
                 }
             }
 
-            // BOTTOM CONTROLS: EXACT IMAGE 2 & 3 STYLE
+            // BOTTOM CONTROLS: EXACT ASTERIOD IMAGE 2 & 3 STYLE
             Row {
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 25
@@ -409,7 +435,7 @@ Item {
                         font.pixelSize: 24
                     }
 
-                    // Pure White Wireframe Search Bar
+                    // Pure White Wireframe Search Target
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: parent.width - 10
@@ -516,7 +542,7 @@ Item {
     }
 
     // ==========================================
-    // EPISODE LIST OVERLAY (CENTERED BACK BUTTON)
+    // EPISODE LIST OVERLAY (CENTERED TOP BACK BUTTON)
     // ==========================================
     Rectangle {
         id: episodeOverlay
