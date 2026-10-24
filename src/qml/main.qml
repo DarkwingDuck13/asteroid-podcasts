@@ -7,20 +7,11 @@ Item {
     height: 400
 
     property string currentShowTitle: ""
-
-    // State for Long-Press Delete
     property string deleteShowTitle: ""
     property string deleteEpTitle: ""
 
-    // Native AsteroidOS Deep Teal Gradient (Matching Image 2)
-    Rectangle {
-        anchors.fill: parent
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#0c2430" }
-            GradientStop { position: 0.7; color: "#06131a" }
-            GradientStop { position: 1.0; color: "#02070a" }
-        }
-    }
+    // AsteroidOS Low-Poly Faceted Background
+    FacetedBackground { anchors.fill: parent }
 
     SwipeView {
         id: swipeView
@@ -29,12 +20,12 @@ Item {
         interactive: !radialOsk.visible && !deleteConfirmOverlay.visible
 
         // ==========================================
-        // SCREEN 0: SUBSCRIPTIONS & EPISODES (NATIVE LIST)
+        // SCREEN 0: SUBSCRIPTIONS & EPISODES
         // ==========================================
         Item {
             Flickable {
                 anchors.fill: parent
-                anchors.margins: 35
+                anchors.margins: 30
                 contentWidth: width
                 contentHeight: subsCol.height
                 clip: true
@@ -42,14 +33,14 @@ Item {
                 Column {
                     id: subsCol
                     width: parent.width
-                    spacing: 14
+                    spacing: 16
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Subscriptions"
                         color: "#ffffff"
                         font.bold: true
-                        font.pixelSize: 22
+                        font.pixelSize: 24
                     }
 
                     // --- SECTION A: READY ON WATCH ---
@@ -57,7 +48,7 @@ Item {
                         text: "READY ON WATCH"
                         color: "#00ffcc"
                         font.bold: true
-                        font.pixelSize: 13
+                        font.pixelSize: 14
                         visible: engine.downloadedEpisodes.length > 0
                     }
 
@@ -65,7 +56,7 @@ Item {
                         model: engine.downloadedEpisodes
                         delegate: Item {
                             width: subsCol.width
-                            height: 60
+                            height: 68
 
                             Column {
                                 anchors.left: parent.left
@@ -76,35 +67,36 @@ Item {
                                     text: modelData.epTitle
                                     color: "#ffffff"
                                     font.bold: true
-                                    font.pixelSize: 15
+                                    font.pixelSize: 17
                                     elide: Text.ElideRight
                                     width: parent.width
                                 }
                                 Text {
                                     text: modelData.showTitle + " • " + modelData.sizeMB
                                     color: "#00d2ff"
-                                    font.pixelSize: 12
+                                    font.pixelSize: 13
                                     elide: Text.ElideRight
                                     width: parent.width
                                 }
                             }
 
-                            // Circular Play Outline Button
+                            // Circular Play Button (Asteroid OS Image 2 Style!)
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 48
-                                height: 48
-                                radius: 24
+                                width: 50
+                                height: 50
+                                radius: 25
                                 color: playBtnMouse.pressed ? "#00ffcc" : "transparent"
                                 border.color: playBtnMouse.pressed ? "#00ffcc" : "#ffffff"
                                 border.width: 2
 
                                 Text {
                                     anchors.centerIn: parent
+                                    anchors.horizontalCenterOffset: 2
                                     text: "▶"
                                     color: playBtnMouse.pressed ? "#000000" : "#ffffff"
-                                    font.pixelSize: 18
+                                    font.pixelSize: 20
                                 }
 
                                 MouseArea {
@@ -128,12 +120,12 @@ Item {
 
                     Item { width: 1; height: 4; visible: engine.downloadedEpisodes.length > 0 }
 
-                    // --- SECTION B: SHOW CHANNELS ---
+                    // --- SECTION B: CHANNELS ---
                     Text {
                         text: "CHANNELS"
                         color: "#00d2ff"
                         font.bold: true
-                        font.pixelSize: 13
+                        font.pixelSize: 14
                         visible: engine.subscriptions.length > 0
                     }
 
@@ -141,7 +133,7 @@ Item {
                         model: engine.subscriptions
                         delegate: Item {
                             width: subsCol.width
-                            height: 56
+                            height: 60
 
                             MouseArea {
                                 anchors.fill: parent
@@ -159,7 +151,7 @@ Item {
                                 text: modelData.title
                                 color: "#ffffff"
                                 font.bold: true
-                                font.pixelSize: 16
+                                font.pixelSize: 17
                                 width: parent.width - 55
                                 elide: Text.ElideRight
                             }
@@ -168,18 +160,18 @@ Item {
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 40
-                                height: 40
-                                radius: 20
+                                width: 44
+                                height: 44
+                                radius: 22
                                 color: unsubMouse.pressed ? "#ff4444" : "transparent"
                                 border.color: "#ffffff"
-                                border.width: 1.5
+                                border.width: 2
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "✕"
                                     color: unsubMouse.pressed ? "#000" : "#ffffff"
-                                    font.pixelSize: 16
+                                    font.pixelSize: 18
                                 }
 
                                 MouseArea {
@@ -199,15 +191,15 @@ Item {
         }
 
         // ==========================================
-        // SCREEN 1: NOW PLAYING (EXACT ASTEROID OS IMAGE 2 & 3 STYLE!)
+        // SCREEN 1: NOW PLAYING (OSCILLATING TIMELINE & ASTERIOD CONTROLS)
         // ==========================================
         Item {
-            // TOP: Track Title (Bold White) & Show Name (Regular White) - MATCHING IMAGE 2!
+            // TOP: Track Title & Show (Matching Image 2)
             Column {
                 anchors.top: parent.top
-                anchors.topMargin: 35
+                anchors.topMargin: 30
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width - 50
+                width: parent.width - 40
                 spacing: 4
 
                 Text {
@@ -227,22 +219,103 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "Radio Rental"
                     color: "#b0d8e8"
-                    font.pixelSize: 15
+                    font.pixelSize: 16
                     elide: Text.ElideRight
                 }
             }
 
-            // CENTER CONTROLS: EXACT IMAGE 2 (PLAY) & IMAGE 3 (VOL - / VOL +)
-            Row {
+            // EQUATOR: OSCILLATING FREQUENCY TIMELINE (CENTERED!)
+            Item {
+                id: timelineEquator
                 anchors.centerIn: parent
-                anchors.verticalCenterOffset: 15
-                spacing: 24
+                width: parent.width - 40
+                height: 40
 
-                // Circular VOL - Button ((-) directly from Image 3!)
+                // Animated Audio Frequency Meter (Oscillates while playing!)
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 4
+                    visible: engine.playing
+
+                    Repeater {
+                        model: 18
+                        Rectangle {
+                            width: 3
+                            height: 6 + Math.abs(Math.sin((waveTimer.step + index * 0.4)) * 16)
+                            radius: 1.5
+                            color: "#00ffcc"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
+
+                Timer {
+                    id: waveTimer
+                    property real step: 0
+                    interval: 60
+                    running: engine.playing
+                    repeat: true
+                    onTriggered: step += 0.3
+                }
+
+                // Base Timeline Slider
+                Slider {
+                    anchors.centerIn: parent
+                    width: parent.width
+                    from: 0
+                    to: Math.max(1, engine.duration)
+                    value: engine.position
+                    onMoved: engine.seek(value)
+                    opacity: engine.playing ? 0.35 : 1.0 // Lets frequency wave shine through!
+                }
+
+                // Pulsing dot at progress position
                 Rectangle {
-                    width: 58
-                    height: 58
-                    radius: 29
+                    x: (parent.width - 12) * (engine.duration > 0 ? (engine.position / engine.duration) : 0)
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 12
+                    height: 12
+                    radius: 6
+                    color: "#00ffcc"
+                    visible: engine.playing
+
+                    SequentialAnimation on scale {
+                        loops: Animation.Infinite
+                        running: engine.playing
+                        PropertyAnimation { to: 1.35; duration: 400 }
+                        PropertyAnimation { to: 1.0; duration: 400 }
+                    }
+                }
+
+                Text {
+                    anchors.top: parent.bottom
+                    anchors.topMargin: 2
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    function fmt(ms) {
+                        var s = Math.floor(ms / 1000);
+                        var m = Math.floor(s / 60);
+                        return m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+                    }
+                    text: fmt(engine.position) + " / " + fmt(engine.duration)
+                    color: "#00ffcc"
+                    font.family: "Monospace"
+                    font.bold: true
+                    font.pixelSize: 14
+                }
+            }
+
+            // BOTTOM CONTROLS: EXACT ASTERIOD IMAGE 2 & 3 STYLE
+            Row {
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 25
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 28
+
+                // (-) Volume Down Button (Image 3)
+                Rectangle {
+                    width: 64
+                    height: 64
+                    radius: 32
                     color: volDownMouse.pressed ? "#00ffcc" : "transparent"
                     border.color: volDownMouse.pressed ? "#00ffcc" : "#ffffff"
                     border.width: 2.5
@@ -251,7 +324,7 @@ Item {
                         anchors.centerIn: parent
                         text: "−"
                         color: volDownMouse.pressed ? "#000000" : "#ffffff"
-                        font.pixelSize: 28
+                        font.pixelSize: 32
                     }
 
                     MouseArea {
@@ -261,16 +334,17 @@ Item {
                     }
                 }
 
-                // Giant Solid White Play/Pause Glyph (DIRECTLY FROM IMAGE 2!)
+                // Giant Solid White Play/Pause Glyph (Image 2)
                 Item {
-                    width: 68
-                    height: 68
+                    width: 72
+                    height: 72
 
                     Text {
                         anchors.centerIn: parent
+                        anchors.horizontalCenterOffset: engine.playing ? 0 : 4
                         text: engine.playing ? "⏸" : "▶"
                         color: "#ffffff"
-                        font.pixelSize: 52
+                        font.pixelSize: 58
                     }
 
                     MouseArea {
@@ -282,11 +356,11 @@ Item {
                     }
                 }
 
-                // Circular VOL + Button ((+) directly from Image 3!)
+                // (+) Volume Up Button (Image 3)
                 Rectangle {
-                    width: 58
-                    height: 58
-                    radius: 29
+                    width: 64
+                    height: 64
+                    radius: 32
                     color: volUpMouse.pressed ? "#00ffcc" : "transparent"
                     border.color: volUpMouse.pressed ? "#00ffcc" : "#ffffff"
                     border.width: 2.5
@@ -295,7 +369,7 @@ Item {
                         anchors.centerIn: parent
                         text: "+"
                         color: volUpMouse.pressed ? "#000000" : "#ffffff"
-                        font.pixelSize: 28
+                        font.pixelSize: 32
                     }
 
                     MouseArea {
@@ -303,37 +377,6 @@ Item {
                         anchors.fill: parent
                         onClicked: engine.volumeUp()
                     }
-                }
-            }
-
-            // BOTTOM: Thin White Timeline & Monospace Timestamp
-            Column {
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 30
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width - 60
-                spacing: 6
-
-                Slider {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width
-                    from: 0
-                    to: Math.max(1, engine.duration)
-                    value: engine.position
-                    onMoved: engine.seek(value)
-                }
-
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    function fmt(ms) {
-                        var s = Math.floor(ms / 1000);
-                        var m = Math.floor(s / 60);
-                        return m + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
-                    }
-                    text: fmt(engine.position) + " / " + fmt(engine.duration)
-                    color: "#00ffcc"
-                    font.family: "Monospace"
-                    font.pixelSize: 14
                 }
             }
         }
@@ -352,22 +395,22 @@ Item {
                 Column {
                     id: searchCol
                     width: parent.width
-                    spacing: 14
+                    spacing: 16
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Add Podcasts"
                         color: "#ffffff"
                         font.bold: true
-                        font.pixelSize: 22
+                        font.pixelSize: 24
                     }
 
-                    // Circular Search Target
+                    // Circular Outline Search Target
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        width: parent.width - 20
-                        height: 54
-                        radius: 27
+                        width: parent.width - 10
+                        height: 56
+                        radius: 28
                         color: searchBtnMouse.pressed ? "#00ffcc" : "transparent"
                         border.color: searchBtnMouse.pressed ? "#00ffcc" : "#ffffff"
                         border.width: 2
@@ -380,7 +423,7 @@ Item {
                                 text: "SEARCH PODCASTS"
                                 color: searchBtnMouse.pressed ? "#000" : "#ffffff"
                                 font.bold: true
-                                font.pixelSize: 14
+                                font.pixelSize: 15
                             }
                         }
 
@@ -398,14 +441,14 @@ Item {
                         text: engine.searching ? "Searching Apple Directory..." : (engine.searchResults.length > 0 ? "RESULTS" : "")
                         color: "#00ffcc"
                         font.bold: true
-                        font.pixelSize: 13
+                        font.pixelSize: 14
                     }
 
                     Repeater {
                         model: engine.searchResults
                         delegate: Item {
                             width: searchCol.width
-                            height: 60
+                            height: 64
 
                             Column {
                                 anchors.left: parent.left
@@ -416,26 +459,26 @@ Item {
                                     text: modelData.title
                                     color: "#ffffff"
                                     font.bold: true
-                                    font.pixelSize: 15
+                                    font.pixelSize: 16
                                     elide: Text.ElideRight
                                     width: parent.width
                                 }
                                 Text {
                                     text: modelData.artist
                                     color: "#00d2ff"
-                                    font.pixelSize: 12
+                                    font.pixelSize: 13
                                     elide: Text.ElideRight
                                     width: parent.width
                                 }
                             }
 
-                            // Circular Subscribe Button (+)
+                            // Circular (+) Subscribe Button
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 44
-                                height: 44
-                                radius: 22
+                                width: 48
+                                height: 48
+                                radius: 24
                                 color: subMouse.pressed ? "#00ffcc" : "transparent"
                                 border.color: "#ffffff"
                                 border.width: 2
@@ -445,7 +488,7 @@ Item {
                                     text: "+"
                                     color: subMouse.pressed ? "#000" : "#ffffff"
                                     font.bold: true
-                                    font.pixelSize: 22
+                                    font.pixelSize: 26
                                 }
 
                                 MouseArea {
@@ -467,23 +510,21 @@ Item {
     }
 
     // ==========================================
-    // EPISODE LIST OVERLAY
+    // EPISODE LIST OVERLAY (CENTERED TOP BACK BUTTON!)
     // ==========================================
     Rectangle {
         id: episodeOverlay
         anchors.fill: parent
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#0c2430" }
-            GradientStop { position: 1.0; color: "#02070a" }
-        }
         visible: false
 
         function open() { visible = true; }
         function close() { visible = false; }
 
+        FacetedBackground { anchors.fill: parent }
+
         Flickable {
             anchors.fill: parent
-            anchors.margins: 35
+            anchors.margins: 30
             contentWidth: width
             contentHeight: epCol.height
             clip: true
@@ -493,47 +534,67 @@ Item {
                 width: parent.width
                 spacing: 12
 
-                Row {
-                    spacing: 10
-                    // Circular Back Button (<)
+                // TOP CENTERED BACK BUTTON & TITLE (No More Corner Clipping!)
+                Column {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 6
+                    width: parent.width
+
+                    // Circular Back Button centered at top
                     Rectangle {
-                        width: 44; height: 44; radius: 22
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: 48
+                        height: 48
+                        radius: 24
                         color: "transparent"
                         border.color: "#ffffff"
                         border.width: 2
-                        Text { anchors.centerIn: parent; text: "‹"; color: "#fff"; font.bold: true; font.pixelSize: 24 }
-                        MouseArea { anchors.fill: parent; onClicked: episodeOverlay.close() }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "✕"
+                            color: "#ffffff"
+                            font.bold: true
+                            font.pixelSize: 20
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: episodeOverlay.close()
+                        }
                     }
+
                     Text {
-                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.horizontalCenter: parent.horizontalCenter
                         text: root.currentShowTitle
                         color: "#ffffff"
                         font.bold: true
-                        font.pixelSize: 16
-                        width: 150
+                        font.pixelSize: 18
+                        width: parent.width - 20
+                        horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
                     }
                 }
 
-                // Download Progress
+                // Download Progress Banner
                 Rectangle {
                     width: parent.width
-                    height: 20
+                    height: 22
                     color: "#0a1820"
-                    radius: 10
+                    radius: 11
                     visible: engine.downloading
 
                     Rectangle {
                         height: parent.height
                         width: parent.width * (engine.downloadProgress / 100.0)
                         color: "#00ffcc"
-                        radius: 10
+                        radius: 11
                     }
                     Text {
                         anchors.centerIn: parent
                         text: "Downloading " + engine.downloadProgress + "%"
                         color: "#000000"
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         font.bold: true
                     }
                 }
@@ -542,44 +603,45 @@ Item {
                     model: engine.episodes
                     delegate: Item {
                         width: epCol.width
-                        height: 60
+                        height: 68
 
                         Column {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - 60
+                            width: parent.width - 65
 
                             Text {
                                 text: modelData.title
                                 color: "#ffffff"
                                 font.bold: true
-                                font.pixelSize: 14
+                                font.pixelSize: 16
                                 elide: Text.ElideRight
                                 width: parent.width
                             }
                             Text {
                                 text: modelData.isDownloaded ? "On Watch" : "Cloud"
                                 color: modelData.isDownloaded ? "#00ffcc" : "#6ea0b5"
-                                font.pixelSize: 11
+                                font.pixelSize: 13
                             }
                         }
 
-                        // Circular Action Button (▶ or ⬇)
+                        // Circular Action Button (Asteroid OS Style!)
                         Rectangle {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 48
-                            height: 48
-                            radius: 24
+                            width: 50
+                            height: 50
+                            radius: 25
                             color: epActionMouse.pressed ? "#00ffcc" : "transparent"
                             border.color: "#ffffff"
                             border.width: 2
 
                             Text {
                                 anchors.centerIn: parent
+                                anchors.horizontalCenterOffset: modelData.isDownloaded ? 2 : 0
                                 text: modelData.isDownloaded ? "▶" : "⬇"
                                 color: epActionMouse.pressed ? "#000" : "#ffffff"
-                                font.pixelSize: 18
+                                font.pixelSize: 20
                             }
 
                             MouseArea {
@@ -613,7 +675,7 @@ Item {
     }
 
     // ==========================================
-    // LONG-PRESS DELETE MODAL (IMAGE 1 STYLE: (✕) and (✓))
+    // DELETE CONFIRMATION DIALOG (IMAGE 1 STYLE: (✕) and (✓))
     // ==========================================
     Rectangle {
         id: deleteConfirmOverlay
@@ -626,14 +688,14 @@ Item {
             width: 260
             height: 200
             radius: 130
-            color: "#0c1820"
+            color: "#081d28"
             border.color: "#ff4444"
             border.width: 2
             anchors.centerIn: parent
 
             Column {
                 anchors.centerIn: parent
-                spacing: 10
+                spacing: 12
                 width: parent.width - 30
 
                 Text {
@@ -641,7 +703,7 @@ Item {
                     text: "DELETE EPISODE?"
                     color: "#ff4444"
                     font.bold: true
-                    font.pixelSize: 14
+                    font.pixelSize: 15
                 }
 
                 Text {
@@ -649,7 +711,7 @@ Item {
                     text: root.deleteEpTitle
                     color: "#ffffff"
                     font.bold: true
-                    font.pixelSize: 13
+                    font.pixelSize: 14
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
                     maximumLineCount: 2
@@ -657,17 +719,16 @@ Item {
                     elide: Text.ElideRight
                 }
 
-                // Circular Choice Buttons: (✕) and (✓)
                 Row {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 24
+                    spacing: 26
 
                     Rectangle {
-                        width: 50; height: 50; radius: 25
+                        width: 52; height: 52; radius: 26
                         color: "transparent"
                         border.color: "#ffffff"
                         border.width: 2
-                        Text { anchors.centerIn: parent; text: "✕"; color: "#fff"; font.pixelSize: 20 }
+                        Text { anchors.centerIn: parent; text: "✕"; color: "#fff"; font.pixelSize: 22 }
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
@@ -678,11 +739,11 @@ Item {
                     }
 
                     Rectangle {
-                        width: 50; height: 50; radius: 25
+                        width: 52; height: 52; radius: 26
                         color: "transparent"
                         border.color: "#ff4444"
                         border.width: 2
-                        Text { anchors.centerIn: parent; text: "✓"; color: "#ff4444"; font.pixelSize: 22; font.bold: true }
+                        Text { anchors.centerIn: parent; text: "✓"; color: "#ff4444"; font.pixelSize: 26; font.bold: true }
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
@@ -697,7 +758,7 @@ Item {
         }
     }
 
-    // FULL-SCREEN RADIAL KEYBOARD OVERLAY
+    // FULL-SCREEN ROTARY KEYBOARD WITH INERTIA & 12:00 APERTURE
     RadialKeyboard {
         id: radialOsk
         anchors.fill: parent
