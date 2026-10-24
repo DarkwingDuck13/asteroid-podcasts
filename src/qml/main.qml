@@ -20,6 +20,14 @@ Item {
     property string deleteShowTitle: ""
     property string deleteEpTitle: ""
 
+    // Clean, universal time-formatter helper
+    function formatTime(ms) {
+        var totalSec = Math.floor(ms / 1000);
+        var m = Math.floor(totalSec / 60);
+        var s = totalSec % 60;
+        return m + ":" + (s < 10 ? "0" : "") + s;
+    }
+
     // Native AsteroidOS Faceted Low-Poly Background
     FacetedBackground { anchors.fill: parent }
 
@@ -131,143 +139,3 @@ Item {
                     }
 
                     Item { width: 1; height: 4; visible: engine.downloadedEpisodes.length > 0 }
-
-                    // --- SECTION B: CHANNELS ---
-                    Text {
-                        text: "CHANNELS"
-                        color: "#ffffff"
-                        opacity: 0.6
-                        font.bold: true
-                        font.pixelSize: 13
-                        visible: engine.subscriptions.length > 0
-                    }
-
-                    Repeater {
-                        model: engine.subscriptions
-                        delegate: Item {
-                            width: subsCol.width
-                            height: 60
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    engine.buzz(25);
-                                    root.currentShowTitle = modelData.title;
-                                    engine.loadEpisodes(modelData.title, modelData.feedUrl);
-                                    episodeOverlay.open();
-                                }
-                            }
-
-                            Text {
-                                anchors.left: parent.left
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: modelData.title
-                                color: "#ffffff"
-                                font.bold: true
-                                font.pixelSize: 17
-                                width: parent.width - 55
-                                elide: Text.ElideRight
-                            }
-
-                            // Circular Unsubscribe (✕)
-                            Rectangle {
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 44
-                                height: 44
-                                radius: 22
-                                color: unsubMouse.pressed ? "#40ffffff" : "transparent"
-                                border.color: "#ffffff"
-                                border.width: 2
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "✕"
-                                    color: "#ffffff"
-                                    font.pixelSize: 18
-                                }
-
-                                MouseArea {
-                                    id: unsubMouse
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        engine.buzz(40);
-                                        engine.unsubscribe(modelData.feedUrl);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Item { width: 1; height: 40 }
-                }
-            }
-        }
-
-        // ==========================================
-        // SCREEN 1: NOW PLAYING (OSCILLATING WAVEFORM TIMELINE)
-        // ==========================================
-        Item {
-            // TOP: Track Title & Show (Matching Image 2)
-            Column {
-                anchors.top: parent.top
-                anchors.topMargin: 30
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width - 40
-                spacing: 4
-
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: engine.currentTrackTitle.length > 0 ? engine.currentTrackTitle : "Ready to Play"
-                    color: "#ffffff"
-                    font.bold: true
-                    font.pixelSize: 22
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.Wrap
-                    maximumLineCount: 2
-                    elide: Text.ElideRight
-                }
-
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: "Radio Rental"
-                    color: "#ffffff"
-                    opacity: 0.65
-                    font.pixelSize: 16
-                    elide: Text.ElideRight
-                }
-            }
-
-            // EQUATOR: OSCILLATING SINE-WAVE TIMELINE & PULSING DOT
-            Item {
-                id: waveTimeline
-                anchors.centerIn: parent
-                width: parent.width - 50
-                height: 50
-
-                property real progress: (engine.duration > 0) ? (engine.position / engine.duration) : 0
-                property real wavePhase: 0
-                property real waveAmp: engine.playing ? 10 : 0
-
-                // Smoothly flattens the wave to a straight line on pause, ripples on play
-                Behavior on waveAmp {
-                    NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
-                }
-
-                Timer {
-                    id: waveTimer
-                    interval: 33 // ~30 fps smooth wave motion
-                    running: engine.playing || waveTimeline.waveAmp > 0.1
-                    repeat: true
-                    onTriggered: {
-                        waveTimeline.wavePhase += 0.14;
-                        waveCanvas.requestPaint();
-                    }
-                }
-
-                Canvas {
-                    id: waveCanvas
-                    anchors.fill: parent
-
-                    onPaint: {
-                        var ctx = getCont
