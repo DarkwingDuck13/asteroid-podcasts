@@ -58,8 +58,7 @@ void PodcastEngine::acquireWakeLock() {
         file.write("asteroid-podcasts");
         file.close();
     }
-    // Secondary fallback: prevent systemd from suspending audio thread
-    QProcess::startDetached("sh", QStringList() << "-c" << "echo asteroid-podcasts > /sys/power/wake_lock 2>/dev/null || true");
+    QProcess::startDetached("sh", QStringList() << "-c" << "echo asteroid-podcasts > /sys/power/wake_lock 2>/dev/null; dbus-send --system --type=method_call --dest=com.nokia.mce /com/nokia/mce/request com.nokia.mce.request.req_display_blanking_pause 2>/dev/null || true");
 }
 
 void PodcastEngine::releaseWakeLock() {
@@ -73,7 +72,7 @@ void PodcastEngine::releaseWakeLock() {
 
 void PodcastEngine::onPlaybackStateChanged(QMediaPlayer::PlaybackState state) {
     if (state == QMediaPlayer::PlayingState) {
-        acquireWakeLock(); // Screen can sleep, CPU stays awake!
+        acquireWakeLock();
         m_saveTimer->start(5000);
     } else {
         releaseWakeLock();
