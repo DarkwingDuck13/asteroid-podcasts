@@ -33,7 +33,7 @@ Item {
     SwipeView {
         id: swipeView
         anchors.fill: parent
-        currentIndex: 1
+        currentIndex: 1 // Opens to Player
         interactive: !radialOsk.visible && !deleteConfirmOverlay.visible && !channelDetailsOverlay.visible
 
         // ==========================================
@@ -101,19 +101,28 @@ Item {
                                 }
                             }
 
-                            // Unboxed Solid White Play Triangle (No Blue Box!)
+                            // Pure Vector White Play Triangle (No Blue Boxes!)
                             Item {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 50
                                 height: 50
 
-                                Text {
+                                Canvas {
                                     anchors.centerIn: parent
-                                    anchors.horizontalCenterOffset: 3
-                                    text: "\u25B6"
-                                    color: "#ffffff"
-                                    font.pixelSize: 28
+                                    anchors.horizontalCenterOffset: 2
+                                    width: 22
+                                    height: 22
+                                    onPaint: {
+                                        var ctx = getContext("2d");
+                                        ctx.fillStyle = "#ffffff";
+                                        ctx.beginPath();
+                                        ctx.moveTo(3, 2);
+                                        ctx.lineTo(20, 11);
+                                        ctx.lineTo(3, 20);
+                                        ctx.closePath();
+                                        ctx.fill();
+                                    }
                                 }
 
                                 MouseArea {
@@ -208,7 +217,7 @@ Item {
         }
 
         // ==========================================
-        // SCREEN 1: NOW PLAYING (OSCILLATING SINE WAVE & PROMINENT CONTROLS)
+        // SCREEN 1: NOW PLAYING (OSCILLOSCOPE SINE WAVE & PURE VECTOR CONTROLS)
         // ==========================================
         Item {
             id: screenPlayer
@@ -338,12 +347,12 @@ Item {
                 }
             }
 
-            // BOTTOM CONTROLS: SHIFTED UPWARD, BALANCED, UNBOXED PLAY GLYPH
+            // BOTTOM CONTROLS: SHIFTED UPWARD, SOLID VECTOR PLAY/PAUSE (NO BLUE BOXES!)
             Row {
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 35
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 24
+                spacing: 28
 
                 // (-) Volume Down
                 Rectangle {
@@ -368,17 +377,37 @@ Item {
                     }
                 }
 
-                // Giant Solid White Play/Pause Glyph (Completely Unboxed!)
+                // Giant Vector Play/Pause (100% Guaranteed Pure White, Image 2 Parity)
                 Item {
                     width: 80
                     height: 80
 
-                    Text {
+                    // 1. Two Rounded Pause Bars
+                    Row {
                         anchors.centerIn: parent
-                        anchors.horizontalCenterOffset: engine.playing ? 0 : 5
-                        text: engine.playing ? "\u23F8" : "\u25B6"
-                        color: "#ffffff"
-                        font.pixelSize: 64
+                        spacing: 10
+                        visible: engine.playing
+                        Rectangle { width: 9; height: 38; radius: 4; color: "#ffffff" }
+                        Rectangle { width: 9; height: 38; radius: 4; color: "#ffffff" }
+                    }
+
+                    // 2. Solid White Play Triangle (Vector Drawn)
+                    Canvas {
+                        anchors.centerIn: parent
+                        anchors.horizontalCenterOffset: 4
+                        width: 44
+                        height: 44
+                        visible: !engine.playing
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.fillStyle = "#ffffff";
+                            ctx.beginPath();
+                            ctx.moveTo(6, 2);
+                            ctx.lineTo(40, 22);
+                            ctx.lineTo(6, 42);
+                            ctx.closePath();
+                            ctx.fill();
+                        }
                     }
 
                     MouseArea {
@@ -482,7 +511,6 @@ Item {
                             width: searchCol.width
                             height: 64
 
-                            // Tap to Preview Channel Details
                             MouseArea {
                                 anchors.left: parent.left
                                 anchors.right: subBtn.left
@@ -579,7 +607,6 @@ Item {
                 width: parent.width
                 spacing: 12
 
-                // Top Centered Close
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 48
@@ -592,7 +619,6 @@ Item {
                     MouseArea { anchors.fill: parent; onClicked: channelDetailsOverlay.visible = false }
                 }
 
-                // Channel Artwork Image
                 Image {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 110
@@ -677,7 +703,6 @@ Item {
                 width: parent.width
                 spacing: 12
 
-                // Top Centered Close
                 Column {
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: 6
@@ -718,7 +743,6 @@ Item {
                     }
                 }
 
-                // Download Progress
                 Rectangle {
                     width: parent.width
                     height: 20
@@ -768,19 +792,39 @@ Item {
                             }
                         }
 
-                        // Unboxed Plain White Triangle Play Button (Image 2 Parity)
+                        // Pure Vector Action Icon (Play Triangle or Download Arrow)
                         Item {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             width: 50
                             height: 50
 
+                            // 1. Play Triangle (Vector)
+                            Canvas {
+                                anchors.centerIn: parent
+                                anchors.horizontalCenterOffset: 2
+                                width: 22
+                                height: 22
+                                visible: modelData.isDownloaded
+                                onPaint: {
+                                    var ctx = getContext("2d");
+                                    ctx.fillStyle = "#ffffff";
+                                    ctx.beginPath();
+                                    ctx.moveTo(3, 2);
+                                    ctx.lineTo(20, 11);
+                                    ctx.lineTo(3, 20);
+                                    ctx.closePath();
+                                    ctx.fill();
+                                }
+                            }
+
+                            // 2. Download Arrow (Vector)
                             Text {
                                 anchors.centerIn: parent
-                                anchors.horizontalCenterOffset: modelData.isDownloaded ? 2 : 0
-                                text: modelData.isDownloaded ? "\u25B6" : "\u2B07"
+                                visible: !modelData.isDownloaded
+                                text: "\u2B07"
                                 color: "#ffffff"
-                                font.pixelSize: modelData.isDownloaded ? 28 : 22
+                                font.pixelSize: 22
                             }
 
                             MouseArea {
@@ -908,7 +952,7 @@ Item {
         }
     }
 
-    // FULL-SCREEN ROTARY KEYBOARD WITH 12:00 APERTURE & INERTIA
+    // FULL-SCREEN ROTARY KEYBOARD WITH INERTIA & 12:00 APERTURE
     RadialKeyboard {
         id: radialOsk
         anchors.fill: parent
