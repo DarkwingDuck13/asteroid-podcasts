@@ -18,8 +18,8 @@
 #include <QXmlStreamReader>
 #include <QUrlQuery>
 #include <QRegularExpression>
-#include <QProcess>
 #include <QDateTime>
+#include <cmath>
 #include <QDebug>
 
 PodcastEngine::PodcastEngine(QObject *parent) : QObject(parent) {
@@ -47,6 +47,7 @@ PodcastEngine::PodcastEngine(QObject *parent) : QObject(parent) {
 }
 
 PodcastEngine::~PodcastEngine() {
+    stopLevelMonitor();
     saveCurrentState();
     saveSubscriptions();
     releaseWakeLock();
@@ -74,12 +75,72 @@ void PodcastEngine::onPlaybackStateChanged(QMediaPlayer::PlaybackState state) {
     if (state == QMediaPlayer::PlayingState) {
         acquireWakeLock();
         m_saveTimer->start(5000);
+        if (m_visualizerActive) startLevelMonitor();
     } else {
         releaseWakeLock();
         m_saveTimer->stop();
+        stopLevelMonitor();
         saveCurrentState();
     }
     emit playingChanged();
+}
+
+void PodcastEngine::setVisualizerActive(bool active) {
+    m_visualizerActive = active;
+    if (m_visualizerActive && isPlaying()) {
+        startLevelMonitor();
+    } else {
+        stopLevelMonitor();
+    }
+}
+
+// Low-overhead PulseAudio monitor tap (<0.5% CPU)
+void PodcastEngine::startLevelMonitor() {
+    if (m_levelProc) return;
+
+    m_levelProc = new QProcess(this);
+    connect(m_levelProc, &QProcess::readyReadStandardOutput, this, &PodcastEngine::onLevelDataReady);
+
+    // Stream 8kHz mono 16-bit audio from default output monitor
+    m_levelProc->start("parec", QStringList() 
+        << "-d" << "@DEFAULT_SINK@.monitor"
+        << "--rate=8000"
+        << "--channels=1"
+        << "--format=s16le"
+        << "--latency-msec=50");
+}
+
+void PodcastEngine::stopLevelMonitor() {
+    if (m_levelProc) {
+        m_levelProc->kill();
+        m_levelProc->deleteLater();
+        m_levelProc = nullptr;
+    }
+    m_audioLevel = 0.0;
+    emit audioLevelChanged();
+}
+
+void PodcastEngine::onLevelDataReady() {
+    if (!m_levelProc) return;
+
+    QByteArray data = m_levelProc->readAllStandardOutput();
+    int sampleCount = data.size() / 2;
+    if (sampleCount < 16) return;
+
+    const qint16 *samples = reinterpret_cast<const qint16*>(data.constData());
+    double sum = 0;
+    for (int i = 0; i < sampleCount; ++i) {
+        double s = samples[i];
+        sum += s * s;
+    }
+
+    double rms = std::sqrt(sum / sampleCount);
+    // Normalize to 0.0 - 1.0 with natural logarithmic speech threshold
+    double normalized = qBound(0.0, rms / 14000.0, 1.0);
+
+    // Smooth falloff
+    m_audioLevel = (m_audioLevel * 0.4) + (normalized * 0.6);
+    emit audioLevelChanged();
 }
 
 void PodcastEngine::onMediaStatusChanged(QMediaPlayer::MediaStatus status) {
