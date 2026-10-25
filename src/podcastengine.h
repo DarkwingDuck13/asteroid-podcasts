@@ -1,3 +1,13 @@
+/*
+ * =====================================================================
+ * Part of the AsteroidOS Custom Software Suite
+ * Architecture, Engine & UI Engineering by Gemini (Google)
+ * Co-Developed & Tested on-device by DarkwingDuck13
+ *
+ * Platform: AsteroidOS (Linux / Qt6 / OpenEmbedded / TicWatch Pro)
+ * =====================================================================
+ */
+
 #pragma once
 
 #include <QObject>
@@ -9,6 +19,7 @@
 #include <QAudioOutput>
 #include <QFile>
 #include <QTimer>
+#include <QProcess>
 
 class PodcastEngine : public QObject {
     Q_OBJECT
@@ -27,6 +38,9 @@ class PodcastEngine : public QObject {
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
     Q_PROPERTY(QString currentTrackTitle READ currentTrackTitle NOTIFY currentTrackTitleChanged)
     Q_PROPERTY(int currentVolume READ currentVolume NOTIFY volumeChanged)
+    
+    // Live Audio Level (0.0 to 1.0)
+    Q_PROPERTY(qreal audioLevel READ audioLevel NOTIFY audioLevelChanged)
 
 public:
     explicit PodcastEngine(QObject *parent = nullptr);
@@ -46,6 +60,7 @@ public:
     qint64 duration() const { return m_player->duration(); }
     QString currentTrackTitle() const { return m_currentTrackTitle; }
     int currentVolume() const { return m_currentVolume; }
+    qreal audioLevel() const { return m_audioLevel; }
 
     Q_INVOKABLE void search(const QString &term);
     Q_INVOKABLE void subscribe(const QString &title, const QString &feedUrl);
@@ -64,6 +79,9 @@ public:
     Q_INVOKABLE void volumeUp();
     Q_INVOKABLE void volumeDown();
 
+    // Visualizer Lifecycle (Stops CPU drain when screen is off or away from player)
+    Q_INVOKABLE void setVisualizerActive(bool active);
+
     // Haptics & Power
     Q_INVOKABLE void buzz(int ms = 25);
 
@@ -81,6 +99,7 @@ signals:
     void durationChanged();
     void currentTrackTitleChanged();
     void volumeChanged();
+    void audioLevelChanged();
 
 private slots:
     void onSearchFinished();
@@ -90,12 +109,14 @@ private slots:
     void onPlaybackStateChanged(QMediaPlayer::PlaybackState state);
     void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
     void autoSaveState();
+    void onLevelDataReady();
 
 private:
     QNetworkAccessManager *m_net;
     QMediaPlayer *m_player;
     QAudioOutput *m_audioOutput;
     QTimer *m_saveTimer;
+    QProcess *m_levelProc = nullptr;
 
     QVariantList m_subscriptions;
     QVariantList m_searchResults;
@@ -107,6 +128,8 @@ private:
     bool m_isDownloading = false;
     int m_downloadProgress = 0;
     int m_currentVolume = 75;
+    qreal m_audioLevel = 0.0;
+    bool m_visualizerActive = true;
 
     QString m_currentTrackTitle;
     QString m_currentShowTitle;
@@ -125,6 +148,8 @@ private:
     void acquireWakeLock();
     void releaseWakeLock();
     void refreshVolume();
+    void startLevelMonitor();
+    void stopLevelMonitor();
     QString sanitizeFilename(const QString &name);
     QString episodeFilePath(const QString &showTitle, const QString &epTitle);
 };
