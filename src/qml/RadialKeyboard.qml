@@ -88,7 +88,6 @@ Item {
         Repeater {
             model: keyboardRoot.currentChars().length
             delegate: Item {
-                id: letterGondola
                 width: 36
                 height: 36
                 
@@ -99,7 +98,6 @@ Item {
                 x: 200 + 168 * Math.cos(angleRad) - width / 2
                 y: 200 + 168 * Math.sin(angleRad) - height / 2
 
-                // Calculate angular distance to 12:00 aperture
                 property real effectiveAngle: (baseAngleDeg + keyboardRoot.dialRotation + 90.0) % 360.0
                 property real normalizedAngle: (effectiveAngle < 0 ? effectiveAngle + 360.0 : effectiveAngle)
                 property real distToTop: Math.min(normalizedAngle, 360.0 - normalizedAngle)
@@ -114,7 +112,7 @@ Item {
                     font.pixelSize: parent.isAtTop ? 38 : (parent.distToTop < 45 ? 20 : 16)
                     font.family: "Monospace"
 
-                    // COUNTER-ROTATION: KEEPS LETTERS PERFECTLY UPRIGHT AT ALL TIMES!
+                    // FERRIS WHEEL COUNTER-ROTATION: KEEPS CHARACTERS PERFECTLY UPRIGHT!
                     rotation: -dialContainer.rotation
 
                     Behavior on font.pixelSize { NumberAnimation { duration: 60 } }
@@ -125,7 +123,7 @@ Item {
     }
 
     // ==========================================
-    // 3. DIAL TOUCH & LUBRICATED KINETIC INERTIA
+    // 3. DIAL TOUCH & LUBRICATED FLICK INERTIA
     // ==========================================
     MouseArea {
         id: rimTouch
@@ -154,7 +152,6 @@ Item {
             if (delta > 180) delta -= 360;
             if (delta < -180) delta += 360;
 
-            // Travel multiplier for responsive spin feel
             keyboardRoot.dialRotation += (delta * 1.25);
             angularVelocity = delta;
             lastAngle = curAngle;
@@ -163,13 +160,11 @@ Item {
         }
 
         onReleased: function(mouse) {
-            // Commit selected letter on lift-off
             if (keyboardRoot.selectedChar.length > 0) {
-                keyboardRoot.hapticPulse(65); // Deep tactile thud!
+                keyboardRoot.hapticPulse(65); // Solid 65ms selection thud!
                 keyboardRoot.text += keyboardRoot.selectedChar;
             }
 
-            // High-inertia lubricated flick spin
             if (Math.abs(angularVelocity) > 1.5) {
                 inertiaAnim.from = keyboardRoot.dialRotation;
                 inertiaAnim.to = keyboardRoot.dialRotation + (angularVelocity * 18);
@@ -187,7 +182,7 @@ Item {
             if (idx !== keyboardRoot.selectedIndex) {
                 keyboardRoot.selectedIndex = idx;
                 keyboardRoot.selectedChar = chars[idx];
-                keyboardRoot.hapticPulse(30); // Crisp mechanical notch tick
+                keyboardRoot.hapticPulse(30); // 30ms mechanical tick
             }
         }
     }
@@ -204,7 +199,7 @@ Item {
     }
 
     // ==========================================
-    // 4. FLOATING CENTER HUB (NO BLUE CIRCLE, SAFE BUTTON HITBOXES)
+    // 4. FLOATING CENTER HUB (NO BLUE CIRCLE, NO TUTORIAL TEXT)
     // ==========================================
     Item {
         anchors.centerIn: parent
@@ -256,9 +251,9 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            Item { width: 1; height: 4 } // Spacer
+            Item { width: 1; height: 4 }
 
-            // 1. PROMINENT TOP CONFIRM BUTTON (✓) - On Its Own Line!
+            // 1. PROMINENT CONFIRM BUTTON (✓) ON ITS OWN LINE
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: 62
@@ -287,7 +282,7 @@ Item {
                 }
             }
 
-            // 2. LOWER ROW: BACKSPACE & SPACE (Safely Inward, No Accidental Touches)
+            // 2. LOWER ROW: BACKSPACE & SPACE (PULLED INWARD AWAY FROM RIM)
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 24
@@ -303,7 +298,7 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "⌫"
+                        text: "\u232B"
                         color: "#ffffff"
                         font.pixelSize: 22
                     }
@@ -331,7 +326,7 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "␣"
+                        text: "\u2423"
                         color: "#ffffff"
                         font.pixelSize: 22
                     }
@@ -348,7 +343,7 @@ Item {
             }
         }
 
-        // Center Swipe Area (Swapping Character Banks)
+        // Center Swipe to Change Dial Banks
         MouseArea {
             id: hubSwipe
             width: parent.width
