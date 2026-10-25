@@ -20,6 +20,9 @@ Item {
     property string deleteShowTitle: ""
     property string deleteEpTitle: ""
 
+    // Details preview state
+    property var previewPodcast: null
+
     function formatTime(ms) {
         var totalSec = Math.floor(ms / 1000);
         var m = Math.floor(totalSec / 60);
@@ -27,16 +30,13 @@ Item {
         return m + ":" + (s < 10 ? "0" : "") + s;
     }
 
-    // Native AsteroidOS Faceted Low-Poly Background
-    FacetedBackground {
-        anchors.fill: parent
-    }
+    FacetedBackground { anchors.fill: parent }
 
     SwipeView {
         id: swipeView
         anchors.fill: parent
-        currentIndex: 1 // Opens to Player
-        interactive: !radialOsk.visible && !deleteConfirmOverlay.visible
+        currentIndex: 1 // Starts on Screen 1 (Player / Home)
+        interactive: !radialOsk.visible && !deleteConfirmOverlay.visible && !channelDetailsOverlay.visible
 
         // ==========================================
         // SCREEN 0: SUBSCRIPTIONS & EPISODES
@@ -64,9 +64,9 @@ Item {
                         font.pixelSize: 24
                     }
 
-                    // --- SECTION A: READY ON WATCH ---
+                    // --- SECTION A: LOCAL STORAGE ---
                     Text {
-                        text: "READY ON WATCH"
+                        text: "LOCAL STORAGE"
                         color: "#ffffff"
                         opacity: 0.6
                         font.bold: true
@@ -103,27 +103,21 @@ Item {
                                 }
                             }
 
-                            // Circular Play Button
-                            Rectangle {
+                            // Unboxed Plain White Triangle Play Button (Image 2 Parity)
+                            Item {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 50
                                 height: 50
-                                radius: 25
-                                color: playBtnMouse.pressed ? "#40ffffff" : "transparent"
-                                border.color: "#ffffff"
-                                border.width: 2
 
                                 Text {
                                     anchors.centerIn: parent
-                                    anchors.horizontalCenterOffset: 2
                                     text: "\u25B6"
                                     color: "#ffffff"
-                                    font.pixelSize: 20
+                                    font.pixelSize: 28
                                 }
 
                                 MouseArea {
-                                    id: playBtnMouse
                                     anchors.fill: parent
                                     onClicked: {
                                         engine.buzz(35);
@@ -184,7 +178,7 @@ Item {
                                 elide: Text.ElideRight
                             }
 
-                            // Circular Unsubscribe (X)
+                            // Circular Wireframe Unsubscribe (✕)
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
@@ -214,23 +208,21 @@ Item {
                         }
                     }
 
-                    Item {
-                        width: 1
-                        height: 40
-                    }
+                    Item { width: 1; height: 40 }
                 }
             }
         }
 
         // ==========================================
-        // SCREEN 1: NOW PLAYING (OSCILLOSCOPE SINE WAVE)
+        // SCREEN 1: NOW PLAYING (OSCILLOSCOPE SINE WAVE & IMAGE 2 PARITY)
         // ==========================================
         Item {
             id: screenPlayer
 
+            // TOP: Track Title & Show (Blown Up!)
             Column {
                 anchors.top: parent.top
-                anchors.topMargin: 30
+                anchors.topMargin: 25
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: parent.width - 40
                 spacing: 4
@@ -240,7 +232,7 @@ Item {
                     text: engine.currentTrackTitle.length > 0 ? engine.currentTrackTitle : "Ready to Play"
                     color: "#ffffff"
                     font.bold: true
-                    font.pixelSize: 22
+                    font.pixelSize: 24
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.Wrap
@@ -253,21 +245,22 @@ Item {
                     text: "Radio Rental"
                     color: "#ffffff"
                     opacity: 0.65
-                    font.pixelSize: 16
+                    font.pixelSize: 17
                     elide: Text.ElideRight
                 }
             }
 
-            // EQUATOR: OSCILLATING SINE-WAVE TIMELINE
+            // EQUATOR: LIVE OSCILLATING SINE-WAVE TIMELINE
             Item {
                 id: waveTimeline
                 anchors.centerIn: parent
+                anchors.verticalCenterOffset: -5
                 width: parent.width - 50
                 height: 50
 
                 property real progress: (engine.duration > 0) ? (engine.position / engine.duration) : 0
                 property real wavePhase: 0
-                property real waveAmp: engine.playing ? 10 : 0
+                property real waveAmp: engine.playing ? 11 : 0
 
                 Behavior on waveAmp {
                     NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
@@ -297,7 +290,7 @@ Item {
                         var phase = waveTimeline.wavePhase;
                         var progX = Math.max(0, Math.min(width, waveTimeline.progress * width));
 
-                        // 1. Played Section
+                        // 1. Played Wave (Solid Bold White)
                         ctx.lineWidth = 2.5;
                         ctx.strokeStyle = "#ffffff";
                         ctx.beginPath();
@@ -308,7 +301,7 @@ Item {
                         }
                         ctx.stroke();
 
-                        // 2. Unplayed Section
+                        // 2. Unplayed Wave (Subtle 35% White)
                         ctx.lineWidth = 1.5;
                         ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
                         ctx.beginPath();
@@ -319,7 +312,7 @@ Item {
                         }
                         ctx.stroke();
 
-                        // 3. Glowing Progress Dot
+                        // 3. Glowing Progress Dot Riding the Wave
                         var dotY = midY + amp * Math.sin((progX * 0.05) + phase);
 
                         ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
@@ -345,31 +338,31 @@ Item {
 
                 Text {
                     anchors.top: parent.bottom
-                    anchors.topMargin: 2
+                    anchors.topMargin: 4
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: root.formatTime(engine.position) + " / " + root.formatTime(engine.duration)
                     color: "#ffffff"
                     font.family: "Monospace"
                     font.bold: true
-                    font.pixelSize: 14
+                    font.pixelSize: 15
                 }
             }
 
-            // BOTTOM CONTROLS: CIRCULAR WIREFRAME
+            // BOTTOM CONTROLS: SHIFTED UPWARD, BALANCED, PURE ASTEROID OS GLYPHS!
             Row {
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: 25
+                anchors.bottomMargin: 35 // Shifted upward away from bezel!
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 28
+                spacing: 24
 
-                // (-) Vol Down
+                // (-) Volume Down (Image 3)
                 Rectangle {
-                    width: 64
-                    height: 64
-                    radius: 32
+                    width: 58
+                    height: 58
+                    radius: 29
                     color: volDownMouse.pressed ? "#40ffffff" : "transparent"
                     border.color: "#ffffff"
-                    border.width: 2.5
+                    border.width: 2
 
                     Text {
                         anchors.centerIn: parent
@@ -385,17 +378,17 @@ Item {
                     }
                 }
 
-                // Giant Solid Play/Pause Glyph
+                // Giant Solid White Play/Pause Glyph (Unboxed, Highly Prominent!)
                 Item {
-                    width: 72
-                    height: 72
+                    width: 80
+                    height: 80
 
                     Text {
                         anchors.centerIn: parent
-                        anchors.horizontalCenterOffset: engine.playing ? 0 : 4
+                        anchors.horizontalCenterOffset: engine.playing ? 0 : 5
                         text: engine.playing ? "\u23F8" : "\u25B6"
                         color: "#ffffff"
-                        font.pixelSize: 58
+                        font.pixelSize: 64 // Massive prominent icon!
                     }
 
                     MouseArea {
@@ -407,14 +400,14 @@ Item {
                     }
                 }
 
-                // (+) Vol Up
+                // (+) Volume Up (Image 3)
                 Rectangle {
-                    width: 64
-                    height: 64
-                    radius: 32
+                    width: 58
+                    height: 58
+                    radius: 29
                     color: volUpMouse.pressed ? "#40ffffff" : "transparent"
                     border.color: "#ffffff"
-                    border.width: 2.5
+                    border.width: 2
 
                     Text {
                         anchors.centerIn: parent
@@ -499,6 +492,19 @@ Item {
                             width: searchCol.width
                             height: 64
 
+                            // Tap Title/Info to Open Preview Modal!
+                            MouseArea {
+                                anchors.left: parent.left
+                                anchors.right: subBtn.left
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                onClicked: {
+                                    engine.buzz(25);
+                                    root.previewPodcast = modelData;
+                                    channelDetailsOverlay.visible = true;
+                                }
+                            }
+
                             Column {
                                 anchors.left: parent.left
                                 anchors.verticalCenter: parent.verticalCenter
@@ -522,7 +528,9 @@ Item {
                                 }
                             }
 
+                            // Circular (+) Subscribe Wireframe
                             Rectangle {
+                                id: subBtn
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 48
@@ -553,17 +561,111 @@ Item {
                         }
                     }
 
-                    Item {
-                        width: 1
-                        height: 40
-                    }
+                    Item { width: 1; height: 40 }
                 }
             }
         }
     }
 
     // ==========================================
-    // EPISODE LIST OVERLAY
+    // CHANNEL DETAILS MODAL (TAP SHOW TO PREVIEW ARTWORK & DESCRIPTION)
+    // ==========================================
+    Rectangle {
+        id: channelDetailsOverlay
+        anchors.fill: parent
+        visible: false
+        z: 95
+
+        FacetedBackground { anchors.fill: parent }
+
+        Flickable {
+            anchors.fill: parent
+            anchors.margins: 30
+            contentWidth: width
+            contentHeight: detailsCol.height
+            clip: true
+
+            Column {
+                id: detailsCol
+                width: parent.width
+                spacing: 12
+
+                // Top Centered Close
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 48
+                    height: 48
+                    radius: 24
+                    color: "transparent"
+                    border.color: "#ffffff"
+                    border.width: 2
+                    Text { anchors.centerIn: parent; text: "\u2715"; color: "#fff"; font.pixelSize: 20 }
+                    MouseArea { anchors.fill: parent; onClicked: channelDetailsOverlay.visible = false }
+                }
+
+                // Channel Artwork Image
+                Image {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 110
+                    height: 110
+                    fillMode: Image.PreserveAspectFit
+                    source: root.previewPodcast ? root.previewPodcast.artworkUrl : ""
+                }
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: root.previewPodcast ? root.previewPodcast.title : ""
+                    color: "#ffffff"
+                    font.bold: true
+                    font.pixelSize: 18
+                    width: parent.width - 20
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
+                }
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: root.previewPodcast ? root.previewPodcast.artist : ""
+                    color: "#ffffff"
+                    opacity: 0.65
+                    font.pixelSize: 14
+                }
+
+                // Big Subscribe Wireframe
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 140
+                    height: 48
+                    radius: 24
+                    color: "transparent"
+                    border.color: "#ffffff"
+                    border.width: 2
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "+ SUBSCRIBE"
+                        color: "#ffffff"
+                        font.bold: true
+                        font.pixelSize: 14
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            engine.buzz(45);
+                            engine.subscribe(root.previewPodcast.title, root.previewPodcast.feedUrl);
+                            channelDetailsOverlay.visible = false;
+                            swipeView.currentIndex = 0;
+                        }
+                    }
+                }
+                Item { width: 1; height: 35 }
+            }
+        }
+    }
+
+    // ==========================================
+    // EPISODE LIST OVERLAY (CENTERED TOP CLOSE BUTTON)
     // ==========================================
     Rectangle {
         id: episodeOverlay
@@ -573,9 +675,7 @@ Item {
         function open() { visible = true; }
         function close() { visible = false; }
 
-        FacetedBackground {
-            anchors.fill: parent
-        }
+        FacetedBackground { anchors.fill: parent }
 
         Flickable {
             anchors.fill: parent
@@ -589,6 +689,7 @@ Item {
                 width: parent.width
                 spacing: 12
 
+                // Top Centered Close
                 Column {
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: 6
@@ -629,6 +730,7 @@ Item {
                     }
                 }
 
+                // Download Progress
                 Rectangle {
                     width: parent.width
                     height: 20
@@ -678,26 +780,22 @@ Item {
                             }
                         }
 
-                        Rectangle {
+                        // Unboxed Plain White Triangle Play Button (Image 2 Parity)
+                        Item {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             width: 50
                             height: 50
-                            radius: 25
-                            color: epActionMouse.pressed ? "#40ffffff" : "transparent"
-                            border.color: "#ffffff"
-                            border.width: 2
 
                             Text {
                                 anchors.centerIn: parent
                                 anchors.horizontalCenterOffset: modelData.isDownloaded ? 2 : 0
                                 text: modelData.isDownloaded ? "\u25B6" : "\u2B07"
                                 color: "#ffffff"
-                                font.pixelSize: 20
+                                font.pixelSize: modelData.isDownloaded ? 28 : 22
                             }
 
                             MouseArea {
-                                id: epActionMouse
                                 anchors.fill: parent
                                 onClicked: {
                                     engine.buzz(30);
@@ -722,16 +820,13 @@ Item {
                     }
                 }
 
-                Item {
-                    width: 1
-                    height: 40
-                }
+                Item { width: 1; height: 40 }
             }
         }
     }
 
     // ==========================================
-    // DELETE CONFIRMATION DIALOG
+    // DELETE CONFIRMATION DIALOG (IMAGE 1 STYLE: (✕) and (✓))
     // ==========================================
     Rectangle {
         id: deleteConfirmOverlay
@@ -829,7 +924,7 @@ Item {
         }
     }
 
-    // FULL-SCREEN ROTARY KEYBOARD WITH INERTIA & 12:00 APERTURE
+    // FULL-SCREEN ROTARY KEYBOARD WITH 12:00 APERTURE & INERTIA
     RadialKeyboard {
         id: radialOsk
         anchors.fill: parent
