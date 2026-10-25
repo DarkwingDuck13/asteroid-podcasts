@@ -27,19 +27,19 @@ Item {
     signal canceled()
 
     function open(initialText) {
-        text = initialText || ""
-        currentMode = 0
-        dialRotation = 0
-        visible = true
+        text = initialText || "";
+        currentMode = 0;
+        dialRotation = 0;
+        visible = true;
     }
 
     function close() {
-        visible = false
+        visible = false;
     }
 
     function hapticPulse(ms) {
         if (typeof engine !== "undefined" && engine.buzz) {
-            engine.buzz(ms || 25);
+            engine.buzz(ms || 30);
         }
     }
 
@@ -48,17 +48,15 @@ Item {
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
         "abcdefghijklmnopqrstuvwxyz",
         "1234567890.,-_/@?!:",
-        "+=*&%$#()[]{}\\|<>\"'~^;"
+        "+=*&%$#()_+-=/?!.,:;@~"
     ]
 
     function currentChars() {
         return charBanks[currentMode + 1];
     }
 
-    // Native Low-poly faceted background
     FacetedBackground { anchors.fill: parent }
 
-    // Dim vignette
     Rectangle {
         anchors.fill: parent
         color: "#bf000000"
@@ -71,14 +69,14 @@ Item {
         anchors.top: parent.top
         anchors.topMargin: 4
         anchors.horizontalCenter: parent.horizontalCenter
-        text: "▼"
+        text: "\u25BC"
         color: "#ffffff"
-        font.pixelSize: 12
+        font.pixelSize: 14
         z: 30
     }
 
     // ==========================================
-    // 2. THE ROTATING BEZEL DIAL
+    // 2. THE ROTATING DIAL (FERRIS WHEEL UPRIGHT LETTERS)
     // ==========================================
     Item {
         id: dialContainer
@@ -90,6 +88,7 @@ Item {
         Repeater {
             model: keyboardRoot.currentChars().length
             delegate: Item {
+                id: letterGondola
                 width: 36
                 height: 36
                 
@@ -110,10 +109,13 @@ Item {
                     anchors.centerIn: parent
                     text: parent.ch
                     color: "#ffffff"
-                    opacity: parent.isAtTop ? 1.0 : (parent.distToTop < 45 ? 0.7 : 0.4)
+                    opacity: parent.isAtTop ? 1.0 : (parent.distToTop < 45 ? 0.75 : 0.4)
                     font.bold: parent.isAtTop
                     font.pixelSize: parent.isAtTop ? 38 : (parent.distToTop < 45 ? 20 : 16)
                     font.family: "Monospace"
+
+                    // COUNTER-ROTATION: KEEPS LETTERS PERFECTLY UPRIGHT AT ALL TIMES!
+                    rotation: -dialContainer.rotation
 
                     Behavior on font.pixelSize { NumberAnimation { duration: 60 } }
                     Behavior on opacity { NumberAnimation { duration: 60 } }
@@ -123,7 +125,7 @@ Item {
     }
 
     // ==========================================
-    // 3. DIAL TOUCH & FLICK INERTIA (6:00 THUMB SWEEP)
+    // 3. DIAL TOUCH & LUBRICATED KINETIC INERTIA
     // ==========================================
     MouseArea {
         id: rimTouch
@@ -152,7 +154,8 @@ Item {
             if (delta > 180) delta -= 360;
             if (delta < -180) delta += 360;
 
-            keyboardRoot.dialRotation += delta;
+            // Travel multiplier for responsive spin feel
+            keyboardRoot.dialRotation += (delta * 1.25);
             angularVelocity = delta;
             lastAngle = curAngle;
 
@@ -160,14 +163,16 @@ Item {
         }
 
         onReleased: function(mouse) {
+            // Commit selected letter on lift-off
             if (keyboardRoot.selectedChar.length > 0) {
-                keyboardRoot.hapticPulse(35);
+                keyboardRoot.hapticPulse(65); // Deep tactile thud!
                 keyboardRoot.text += keyboardRoot.selectedChar;
             }
 
-            if (Math.abs(angularVelocity) > 2) {
+            // High-inertia lubricated flick spin
+            if (Math.abs(angularVelocity) > 1.5) {
                 inertiaAnim.from = keyboardRoot.dialRotation;
-                inertiaAnim.to = keyboardRoot.dialRotation + (angularVelocity * 10);
+                inertiaAnim.to = keyboardRoot.dialRotation + (angularVelocity * 18);
                 inertiaAnim.start();
             }
         }
@@ -182,7 +187,7 @@ Item {
             if (idx !== keyboardRoot.selectedIndex) {
                 keyboardRoot.selectedIndex = idx;
                 keyboardRoot.selectedChar = chars[idx];
-                keyboardRoot.hapticPulse(25);
+                keyboardRoot.hapticPulse(30); // Crisp mechanical notch tick
             }
         }
     }
@@ -191,7 +196,7 @@ Item {
         id: inertiaAnim
         target: keyboardRoot
         property: "dialRotation"
-        duration: 600
+        duration: 900
         easing.type: Easing.OutCubic
         onRunningChanged: {
             if (!running) rimTouch.updateSelection();
@@ -199,17 +204,17 @@ Item {
     }
 
     // ==========================================
-    // 4. CLEAN CENTER HUB (PURE MONOCHROME ASTEROID OS)
+    // 4. FLOATING CENTER HUB (NO BLUE CIRCLE, SAFE BUTTON HITBOXES)
     // ==========================================
     Item {
         anchors.centerIn: parent
-        width: 250
-        height: 250
+        width: 230
+        height: 230
         z: 10
 
         Column {
             anchors.fill: parent
-            spacing: 12
+            spacing: 6
 
             // Top Header: Active Bank Label + Dots (Shifted Up)
             Row {
@@ -220,7 +225,7 @@ Item {
                     text: keyboardRoot.bankNames[keyboardRoot.currentMode + 1]
                     color: "#ffffff"
                     font.bold: true
-                    font.pixelSize: 13
+                    font.pixelSize: 12
                 }
 
                 Row {
@@ -239,7 +244,7 @@ Item {
                 }
             }
 
-            // Pure Floating Text (No box, enlarged 24px bold font)
+            // Clean Floating Output Text (Large 24px)
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: parent.width - 20
@@ -251,14 +256,43 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            Item { width: 1; height: 16 } // Spacer
+            Item { width: 1; height: 4 } // Spacer
 
-            // 3 Circular Wireframe Buttons (Pure White, Image 1 & 3 Parity)
+            // 1. PROMINENT TOP CONFIRM BUTTON (✓) - On Its Own Line!
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 62
+                height: 62
+                radius: 31
+                color: okBtnMouse.pressed ? "#40ffffff" : "transparent"
+                border.color: "#ffffff"
+                border.width: 2.5
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "\u2713"
+                    color: "#ffffff"
+                    font.bold: true
+                    font.pixelSize: 32
+                }
+
+                MouseArea {
+                    id: okBtnMouse
+                    anchors.fill: parent
+                    onClicked: {
+                        keyboardRoot.hapticPulse(65);
+                        keyboardRoot.accepted(keyboardRoot.text);
+                        keyboardRoot.close();
+                    }
+                }
+            }
+
+            // 2. LOWER ROW: BACKSPACE & SPACE (Safely Inward, No Accidental Touches)
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 20
+                spacing: 24
 
-                // 1. Circular Backspace (⌫)
+                // Backspace (⌫)
                 Rectangle {
                     width: 54
                     height: 54
@@ -286,35 +320,7 @@ Item {
                     }
                 }
 
-                // 2. Circular Confirm (✓) - Directly from Image 1!
-                Rectangle {
-                    width: 64
-                    height: 64
-                    radius: 32
-                    color: okBtnMouse.pressed ? "#40ffffff" : "transparent"
-                    border.color: "#ffffff"
-                    border.width: 2.5
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "✓"
-                        color: "#ffffff"
-                        font.bold: true
-                        font.pixelSize: 32
-                    }
-
-                    MouseArea {
-                        id: okBtnMouse
-                        anchors.fill: parent
-                        onClicked: {
-                            keyboardRoot.hapticPulse(50);
-                            keyboardRoot.accepted(keyboardRoot.text);
-                            keyboardRoot.close();
-                        }
-                    }
-                }
-
-                // 3. Circular Space (␣)
+                // Space (␣)
                 Rectangle {
                     width: 54
                     height: 54
@@ -334,7 +340,7 @@ Item {
                         id: spaceBtnMouse
                         anchors.fill: parent
                         onClicked: {
-                            keyboardRoot.hapticPulse(25);
+                            keyboardRoot.hapticPulse(30);
                             keyboardRoot.text += " ";
                         }
                     }
@@ -342,11 +348,11 @@ Item {
             }
         }
 
-        // Center Swipe to Change Dial Banks
+        // Center Swipe Area (Swapping Character Banks)
         MouseArea {
             id: hubSwipe
             width: parent.width
-            height: 120
+            height: 90
             anchors.top: parent.top
             z: 15
             property real startX: 0
@@ -355,7 +361,7 @@ Item {
             onReleased: function(mouse) {
                 var delta = mouse.x - startX;
                 if (Math.abs(delta) > 30) {
-                    keyboardRoot.hapticPulse(35);
+                    keyboardRoot.hapticPulse(40);
                     if (delta < 0) {
                         if (keyboardRoot.currentMode < 2) keyboardRoot.currentMode++;
                     } else {
