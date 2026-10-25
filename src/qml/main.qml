@@ -19,8 +19,6 @@ Item {
     property string currentShowTitle: ""
     property string deleteShowTitle: ""
     property string deleteEpTitle: ""
-
-    // Details preview state
     property var previewPodcast: null
 
     function formatTime(ms) {
@@ -35,7 +33,7 @@ Item {
     SwipeView {
         id: swipeView
         anchors.fill: parent
-        currentIndex: 1 // Starts on Screen 1 (Player / Home)
+        currentIndex: 1
         interactive: !radialOsk.visible && !deleteConfirmOverlay.visible && !channelDetailsOverlay.visible
 
         // ==========================================
@@ -103,7 +101,7 @@ Item {
                                 }
                             }
 
-                            // Unboxed Plain White Triangle Play Button (Image 2 Parity)
+                            // Unboxed Solid White Play Triangle (No Blue Box!)
                             Item {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
@@ -112,6 +110,7 @@ Item {
 
                                 Text {
                                     anchors.centerIn: parent
+                                    anchors.horizontalCenterOffset: 3
                                     text: "\u25B6"
                                     color: "#ffffff"
                                     font.pixelSize: 28
@@ -135,11 +134,7 @@ Item {
                         }
                     }
 
-                    Item {
-                        width: 1
-                        height: 4
-                        visible: engine.downloadedEpisodes.length > 0
-                    }
+                    Item { width: 1; height: 4; visible: engine.downloadedEpisodes.length > 0 }
 
                     // --- SECTION B: CHANNELS ---
                     Text {
@@ -178,7 +173,6 @@ Item {
                                 elide: Text.ElideRight
                             }
 
-                            // Circular Wireframe Unsubscribe (✕)
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
@@ -214,12 +208,11 @@ Item {
         }
 
         // ==========================================
-        // SCREEN 1: NOW PLAYING (OSCILLOSCOPE SINE WAVE & IMAGE 2 PARITY)
+        // SCREEN 1: NOW PLAYING (OSCILLATING SINE WAVE & PROMINENT CONTROLS)
         // ==========================================
         Item {
             id: screenPlayer
 
-            // TOP: Track Title & Show (Blown Up!)
             Column {
                 anchors.top: parent.top
                 anchors.topMargin: 25
@@ -290,7 +283,6 @@ Item {
                         var phase = waveTimeline.wavePhase;
                         var progX = Math.max(0, Math.min(width, waveTimeline.progress * width));
 
-                        // 1. Played Wave (Solid Bold White)
                         ctx.lineWidth = 2.5;
                         ctx.strokeStyle = "#ffffff";
                         ctx.beginPath();
@@ -301,7 +293,6 @@ Item {
                         }
                         ctx.stroke();
 
-                        // 2. Unplayed Wave (Subtle 35% White)
                         ctx.lineWidth = 1.5;
                         ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
                         ctx.beginPath();
@@ -312,7 +303,6 @@ Item {
                         }
                         ctx.stroke();
 
-                        // 3. Glowing Progress Dot Riding the Wave
                         var dotY = midY + amp * Math.sin((progX * 0.05) + phase);
 
                         ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
@@ -348,14 +338,14 @@ Item {
                 }
             }
 
-            // BOTTOM CONTROLS: SHIFTED UPWARD, BALANCED, PURE ASTEROID OS GLYPHS!
+            // BOTTOM CONTROLS: SHIFTED UPWARD, BALANCED, UNBOXED PLAY GLYPH
             Row {
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: 35 // Shifted upward away from bezel!
+                anchors.bottomMargin: 35
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 24
 
-                // (-) Volume Down (Image 3)
+                // (-) Volume Down
                 Rectangle {
                     width: 58
                     height: 58
@@ -378,7 +368,7 @@ Item {
                     }
                 }
 
-                // Giant Solid White Play/Pause Glyph (Unboxed, Highly Prominent!)
+                // Giant Solid White Play/Pause Glyph (Completely Unboxed!)
                 Item {
                     width: 80
                     height: 80
@@ -388,7 +378,7 @@ Item {
                         anchors.horizontalCenterOffset: engine.playing ? 0 : 5
                         text: engine.playing ? "\u23F8" : "\u25B6"
                         color: "#ffffff"
-                        font.pixelSize: 64 // Massive prominent icon!
+                        font.pixelSize: 64
                     }
 
                     MouseArea {
@@ -400,7 +390,7 @@ Item {
                     }
                 }
 
-                // (+) Volume Up (Image 3)
+                // (+) Volume Up
                 Rectangle {
                     width: 58
                     height: 58
@@ -492,7 +482,7 @@ Item {
                             width: searchCol.width
                             height: 64
 
-                            // Tap Title/Info to Open Preview Modal!
+                            // Tap to Preview Channel Details
                             MouseArea {
                                 anchors.left: parent.left
                                 anchors.right: subBtn.left
@@ -528,7 +518,6 @@ Item {
                                 }
                             }
 
-                            // Circular (+) Subscribe Wireframe
                             Rectangle {
                                 id: subBtn
                                 anchors.right: parent.right
@@ -568,7 +557,7 @@ Item {
     }
 
     // ==========================================
-    // CHANNEL DETAILS MODAL (TAP SHOW TO PREVIEW ARTWORK & DESCRIPTION)
+    // CHANNEL DETAILS MODAL
     // ==========================================
     Rectangle {
         id: channelDetailsOverlay
@@ -631,7 +620,6 @@ Item {
                     font.pixelSize: 14
                 }
 
-                // Big Subscribe Wireframe
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 140
@@ -875,9 +863,7 @@ Item {
                     spacing: 26
 
                     Rectangle {
-                        width: 52
-                        height: 52
-                        radius: 26
+                        width: 52; height: 52; radius: 26
                         color: "transparent"
                         border.color: "#ffffff"
                         border.width: 2
@@ -897,9 +883,7 @@ Item {
                     }
 
                     Rectangle {
-                        width: 52
-                        height: 52
-                        radius: 26
+                        width: 52; height: 52; radius: 26
                         color: "transparent"
                         border.color: "#ffffff"
                         border.width: 2
