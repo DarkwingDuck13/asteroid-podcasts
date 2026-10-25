@@ -1,3 +1,13 @@
+/*
+ * =====================================================================
+ * Part of the AsteroidOS Custom Software Suite
+ * Architecture, Engine & UI Engineering by Gemini (Google)
+ * Co-Developed & Tested on-device by DarkwingDuck13
+ *
+ * Platform: AsteroidOS (Linux / Qt6 / OpenEmbedded / TicWatch Pro)
+ * =====================================================================
+ */
+
 #include "podcastengine.h"
 #include <QDir>
 #include <QFile>
@@ -27,7 +37,6 @@ PodcastEngine::PodcastEngine(QObject *parent) : QObject(parent) {
     m_storagePath = QDir::homePath() + "/podcasts";
     QDir().mkpath(m_storagePath);
 
-    // Auto-save playback state every 5 seconds while listening
     m_saveTimer = new QTimer(this);
     connect(m_saveTimer, &QTimer::timeout, this, &PodcastEngine::autoSaveState);
 
@@ -48,9 +57,9 @@ void PodcastEngine::acquireWakeLock() {
     if (file.open(QIODevice::WriteOnly)) {
         file.write("asteroid-podcasts");
         file.close();
-    } else {
-        QProcess::startDetached("sh", QStringList() << "-c" << "echo asteroid-podcasts > /sys/power/wake_lock 2>/dev/null || true");
     }
+    // Secondary fallback: prevent systemd from suspending audio thread
+    QProcess::startDetached("sh", QStringList() << "-c" << "echo asteroid-podcasts > /sys/power/wake_lock 2>/dev/null || true");
 }
 
 void PodcastEngine::releaseWakeLock() {
@@ -58,17 +67,16 @@ void PodcastEngine::releaseWakeLock() {
     if (file.open(QIODevice::WriteOnly)) {
         file.write("asteroid-podcasts");
         file.close();
-    } else {
-        QProcess::startDetached("sh", QStringList() << "-c" << "echo asteroid-podcasts > /sys/power/wake_unlock 2>/dev/null || true");
     }
+    QProcess::startDetached("sh", QStringList() << "-c" << "echo asteroid-podcasts > /sys/power/wake_unlock 2>/dev/null || true");
 }
 
 void PodcastEngine::onPlaybackStateChanged(QMediaPlayer::PlaybackState state) {
     if (state == QMediaPlayer::PlayingState) {
-        acquireWakeLock(); // Screen can turn off, CPU stays awake!
+        acquireWakeLock(); // Screen can sleep, CPU stays awake!
         m_saveTimer->start(5000);
     } else {
-        releaseWakeLock(); // Allow watch to sleep when paused
+        releaseWakeLock();
         m_saveTimer->stop();
         saveCurrentState();
     }
@@ -207,6 +215,7 @@ void PodcastEngine::onSearchFinished() {
             item["title"] = obj["collectionName"].toString();
             item["artist"] = obj["artistName"].toString();
             item["feedUrl"] = obj["feedUrl"].toString();
+            item["artworkUrl"] = obj["artworkUrl600"].toString().isEmpty() ? obj["artworkUrl100"].toString() : obj["artworkUrl600"].toString();
             m_searchResults.append(item);
         }
     }
@@ -309,6 +318,7 @@ void PodcastEngine::onFeedFinished() {
             m_episodes = freshEpisodes;
         }
     }
+
     reply->deleteLater();
     m_isLoadingEpisodes = false;
     emit loadingEpisodesChanged();
