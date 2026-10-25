@@ -252,7 +252,7 @@ Item {
                 }
             }
 
-            // EQUATOR: LIVE OSCILLATING SINE-WAVE TIMELINE
+// EQUATOR: LIVE AUDIO-REACTIVE SINE-WAVE TIMELINE
             Item {
                 id: waveTimeline
                 anchors.centerIn: parent
@@ -262,11 +262,94 @@ Item {
 
                 property real progress: (engine.duration > 0) ? (engine.position / engine.duration) : 0
                 property real wavePhase: 0
-                property real waveAmp: engine.playing ? 11 : 0
+                // Amplitude reacts directly to the host's voice volume (3px baseline up to 18px on loud speech!)
+                property real waveAmp: engine.playing ? (3.0 + engine.audioLevel * 15.0) : 0
 
                 Behavior on waveAmp {
-                    NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
+                    NumberAnimation { duration: 180; easing.type: Easing.OutQuad }
                 }
+
+                Timer {
+                    id: waveTimer
+                    interval: 33
+                    running: engine.playing || waveTimeline.waveAmp > 0.1
+                    repeat: true
+                    onTriggered: {
+                        waveTimeline.wavePhase += 0.14;
+                        waveCanvas.requestPaint();
+                    }
+                }
+
+                Canvas {
+                    id: waveCanvas
+                    anchors.fill: parent
+
+                    onPaint: {
+                        var ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+
+                        var midY = height / 2;
+                        var amp = waveTimeline.waveAmp;
+                        var phase = waveTimeline.wavePhase;
+                        var progX = Math.max(0, Math.min(width, waveTimeline.progress * width));
+
+                        // 1. Played Wave (Solid Bold White)
+                        ctx.lineWidth = 2.5;
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.beginPath();
+                        for (var x = 0; x <= progX; x += 2) {
+                            var y = midY + amp * Math.sin((x * 0.05) + phase);
+                            if (x === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        }
+                        ctx.stroke();
+
+                        // 2. Unplayed Wave (Subtle 35% White)
+                        ctx.lineWidth = 1.5;
+                        ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+                        ctx.beginPath();
+                        for (var x2 = progX; x2 <= width; x2 += 2) {
+                            var y2 = midY + amp * Math.sin((x2 * 0.05) + phase);
+                            if (x2 === progX) ctx.moveTo(x2, y2);
+                            else ctx.lineTo(x2, y2);
+                        }
+                        ctx.stroke();
+
+                        // 3. Glowing Progress Dot Riding the Wave Peaks
+                        var dotY = midY + amp * Math.sin((progX * 0.05) + phase);
+
+                        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+                        ctx.beginPath();
+                        ctx.arc(progX, dotY, 7, 0, 2 * Math.PI);
+                        ctx.fill();
+
+                        ctx.fillStyle = "#ffffff";
+                        ctx.beginPath();
+                        ctx.arc(progX, dotY, 4, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: function(mouse) {
+                        var ratio = Math.max(0, Math.min(1, mouse.x / width));
+                        engine.seek(ratio * engine.duration);
+                        engine.buzz(20);
+                    }
+                }
+
+                Text {
+                    anchors.top: parent.bottom
+                    anchors.topMargin: 4
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: root.formatTime(engine.position) + " / " + root.formatTime(engine.duration)
+                    color: "#ffffff"
+                    font.family: "Monospace"
+                    font.bold: true
+                    font.pixelSize: 15
+                }
+            }
 
                 Timer {
                     id: waveTimer
