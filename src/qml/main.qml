@@ -33,15 +33,13 @@ Item {
     SwipeView {
         id: swipeView
         anchors.fill: parent
-        currentIndex: 1 // Opens to Player
+        currentIndex: 1 // Opens to Player (Home)
         interactive: !radialOsk.visible && !deleteConfirmOverlay.visible && !channelDetailsOverlay.visible
 
         // ==========================================
         // SCREEN 0: SUBSCRIPTIONS & EPISODES
         // ==========================================
         Item {
-            id: screenSubs
-
             Flickable {
                 anchors.fill: parent
                 anchors.margins: 30
@@ -62,7 +60,7 @@ Item {
                         font.pixelSize: 24
                     }
 
-                    // --- SECTION A: LOCAL STORAGE ---
+                    // LOCAL STORAGE SHELF
                     Text {
                         text: "LOCAL STORAGE"
                         color: "#ffffff"
@@ -101,7 +99,7 @@ Item {
                                 }
                             }
 
-                            // Pure Vector White Play Triangle (No Blue Boxes!)
+                            // Unboxed Solid White Play Triangle
                             Item {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
@@ -145,7 +143,7 @@ Item {
 
                     Item { width: 1; height: 4; visible: engine.downloadedEpisodes.length > 0 }
 
-                    // --- SECTION B: CHANNELS ---
+                    // CHANNELS
                     Text {
                         text: "CHANNELS"
                         color: "#ffffff"
@@ -210,18 +208,16 @@ Item {
                             }
                         }
                     }
-
                     Item { width: 1; height: 40 }
                 }
             }
         }
 
         // ==========================================
-        // SCREEN 1: NOW PLAYING (OSCILLOSCOPE SINE WAVE & PURE VECTOR CONTROLS)
+        // SCREEN 1: NOW PLAYING (OSCILLOSCOPE SINE WAVE)
         // ==========================================
         Item {
-            id: screenPlayer
-
+            // Track Title & Show (Matching Image 2)
             Column {
                 anchors.top: parent.top
                 anchors.topMargin: 25
@@ -252,7 +248,7 @@ Item {
                 }
             }
 
-// EQUATOR: LIVE AUDIO-REACTIVE SINE-WAVE TIMELINE
+            // EQUATOR: LIVE OSCILLATING SINE WAVE TIMELINE
             Item {
                 id: waveTimeline
                 anchors.centerIn: parent
@@ -262,7 +258,6 @@ Item {
 
                 property real progress: (engine.duration > 0) ? (engine.position / engine.duration) : 0
                 property real wavePhase: 0
-                // Amplitude reacts directly to the host's voice volume (3px baseline up to 18px on loud speech!)
                 property real waveAmp: engine.playing ? (3.0 + engine.audioLevel * 15.0) : 0
 
                 Behavior on waveAmp {
@@ -293,7 +288,7 @@ Item {
                         var phase = waveTimeline.wavePhase;
                         var progX = Math.max(0, Math.min(width, waveTimeline.progress * width));
 
-                        // 1. Played Wave (Solid Bold White)
+                        // 1. Played Wave (Solid White)
                         ctx.lineWidth = 2.5;
                         ctx.strokeStyle = "#ffffff";
                         ctx.beginPath();
@@ -304,7 +299,7 @@ Item {
                         }
                         ctx.stroke();
 
-                        // 2. Unplayed Wave (Subtle 35% White)
+                        // 2. Unplayed Wave (35% White)
                         ctx.lineWidth = 1.5;
                         ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
                         ctx.beginPath();
@@ -315,9 +310,8 @@ Item {
                         }
                         ctx.stroke();
 
-                        // 3. Glowing Progress Dot Riding the Wave Peaks
+                        // 3. Glowing Progress Dot
                         var dotY = midY + amp * Math.sin((progX * 0.05) + phase);
-
                         ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
                         ctx.beginPath();
                         ctx.arc(progX, dotY, 7, 0, 2 * Math.PI);
@@ -351,91 +345,12 @@ Item {
                 }
             }
 
-                Timer {
-                    id: waveTimer
-                    interval: 33
-                    running: engine.playing || waveTimeline.waveAmp > 0.1
-                    repeat: true
-                    onTriggered: {
-                        waveTimeline.wavePhase += 0.14;
-                        waveCanvas.requestPaint();
-                    }
-                }
-
-                Canvas {
-                    id: waveCanvas
-                    anchors.fill: parent
-
-                    onPaint: {
-                        var ctx = getContext("2d");
-                        ctx.clearRect(0, 0, width, height);
-
-                        var midY = height / 2;
-                        var amp = waveTimeline.waveAmp;
-                        var phase = waveTimeline.wavePhase;
-                        var progX = Math.max(0, Math.min(width, waveTimeline.progress * width));
-
-                        ctx.lineWidth = 2.5;
-                        ctx.strokeStyle = "#ffffff";
-                        ctx.beginPath();
-                        for (var x = 0; x <= progX; x += 2) {
-                            var y = midY + amp * Math.sin((x * 0.05) + phase);
-                            if (x === 0) ctx.moveTo(x, y);
-                            else ctx.lineTo(x, y);
-                        }
-                        ctx.stroke();
-
-                        ctx.lineWidth = 1.5;
-                        ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
-                        ctx.beginPath();
-                        for (var x2 = progX; x2 <= width; x2 += 2) {
-                            var y2 = midY + amp * Math.sin((x2 * 0.05) + phase);
-                            if (x2 === progX) ctx.moveTo(x2, y2);
-                            else ctx.lineTo(x2, y2);
-                        }
-                        ctx.stroke();
-
-                        var dotY = midY + amp * Math.sin((progX * 0.05) + phase);
-
-                        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-                        ctx.beginPath();
-                        ctx.arc(progX, dotY, 7, 0, 2 * Math.PI);
-                        ctx.fill();
-
-                        ctx.fillStyle = "#ffffff";
-                        ctx.beginPath();
-                        ctx.arc(progX, dotY, 4, 0, 2 * Math.PI);
-                        ctx.fill();
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: function(mouse) {
-                        var ratio = Math.max(0, Math.min(1, mouse.x / width));
-                        engine.seek(ratio * engine.duration);
-                        engine.buzz(20);
-                    }
-                }
-
-                Text {
-                    anchors.top: parent.bottom
-                    anchors.topMargin: 4
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: root.formatTime(engine.position) + " / " + root.formatTime(engine.duration)
-                    color: "#ffffff"
-                    font.family: "Monospace"
-                    font.bold: true
-                    font.pixelSize: 15
-                }
-            }
-
-            // BOTTOM CONTROLS: SHIFTED UPWARD, SOLID VECTOR PLAY/PAUSE (NO BLUE BOXES!)
+            // BOTTOM CONTROLS: SHIFTED UPWARD, SOLID VECTOR PLAY (NO BLUE BOXES!)
             Row {
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 35
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 28
+                spacing: 24
 
                 // (-) Volume Down
                 Rectangle {
@@ -460,12 +375,12 @@ Item {
                     }
                 }
 
-                // Giant Vector Play/Pause (100% Guaranteed Pure White, Image 2 Parity)
+                // Giant Solid White Play/Pause Glyph (Unboxed!)
                 Item {
                     width: 80
                     height: 80
 
-                    // 1. Two Rounded Pause Bars
+                    // Pause Bars
                     Row {
                         anchors.centerIn: parent
                         spacing: 10
@@ -474,7 +389,7 @@ Item {
                         Rectangle { width: 9; height: 38; radius: 4; color: "#ffffff" }
                     }
 
-                    // 2. Solid White Play Triangle (Vector Drawn)
+                    // Solid White Play Triangle
                     Canvas {
                         anchors.centerIn: parent
                         anchors.horizontalCenterOffset: 4
@@ -531,8 +446,6 @@ Item {
         // SCREEN 2: SEARCH TO ADD
         // ==========================================
         Item {
-            id: screenSearch
-
             Flickable {
                 anchors.fill: parent
                 anchors.margins: 35
@@ -660,7 +573,6 @@ Item {
                             }
                         }
                     }
-
                     Item { width: 1; height: 40 }
                 }
             }
@@ -762,7 +674,7 @@ Item {
     }
 
     // ==========================================
-    // EPISODE LIST OVERLAY (CENTERED TOP CLOSE BUTTON)
+    // EPISODE LIST OVERLAY
     // ==========================================
     Rectangle {
         id: episodeOverlay
@@ -875,14 +787,12 @@ Item {
                             }
                         }
 
-                        // Pure Vector Action Icon (Play Triangle or Download Arrow)
                         Item {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             width: 50
                             height: 50
 
-                            // 1. Play Triangle (Vector)
                             Canvas {
                                 anchors.centerIn: parent
                                 anchors.horizontalCenterOffset: 2
@@ -901,7 +811,6 @@ Item {
                                 }
                             }
 
-                            // 2. Download Arrow (Vector)
                             Text {
                                 anchors.centerIn: parent
                                 visible: !modelData.isDownloaded
@@ -934,14 +843,13 @@ Item {
                         }
                     }
                 }
-
                 Item { width: 1; height: 40 }
             }
         }
     }
 
     // ==========================================
-    // DELETE CONFIRMATION DIALOG (IMAGE 1 STYLE: (✕) and (✓))
+    // DELETE CONFIRMATION DIALOG
     // ==========================================
     Rectangle {
         id: deleteConfirmOverlay
@@ -990,7 +898,9 @@ Item {
                     spacing: 26
 
                     Rectangle {
-                        width: 52; height: 52; radius: 26
+                        width: 52
+                        height: 52
+                        radius: 26
                         color: "transparent"
                         border.color: "#ffffff"
                         border.width: 2
@@ -1010,7 +920,9 @@ Item {
                     }
 
                     Rectangle {
-                        width: 52; height: 52; radius: 26
+                        width: 52
+                        height: 52
+                        radius: 26
                         color: "transparent"
                         border.color: "#ffffff"
                         border.width: 2
@@ -1035,7 +947,7 @@ Item {
         }
     }
 
-    // FULL-SCREEN ROTARY KEYBOARD WITH INERTIA & 12:00 APERTURE
+    // FULL-SCREEN ROTARY KEYBOARD WITH 12:00 APERTURE & INERTIA
     RadialKeyboard {
         id: radialOsk
         anchors.fill: parent
