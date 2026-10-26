@@ -7,3 +7,5 @@ X-Asteroid-Center-Color=#8e44ad
 X-Asteroid-Outer-Color=#2c123a
 Type=Application
 Categories=AudioVideo;Audio;
+X-Nemomobile-Application-Type=Silica
+X-Asteroid-KeepAlive=true
