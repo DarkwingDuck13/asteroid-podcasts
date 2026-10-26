@@ -1,3 +1,13 @@
+/*
+ * =====================================================================
+ * Part of the AsteroidOS Custom Software Suite
+ * Architecture, Engine & UI Engineering by Gemini (Google)
+ * Co-Developed & Tested on-device by DarkwingDuck13
+ *
+ * Platform: AsteroidOS (Linux / Qt6 / OpenEmbedded / TicWatch Pro)
+ * =====================================================================
+ */
+
 #include <QGuiApplication>
 #include <QQuickView>
 #include <QQmlContext>
@@ -7,8 +17,10 @@ int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
     app.setApplicationName("asteroid-podcasts");
 
+    // CRITICAL: Do NOT terminate the process when the display blanks or minimizes!
+    QGuiApplication::setQuitOnLastWindowClosed(false);
+
     QQuickView view;
-    // Set default canvas to pure OLED black (no more flashlights!)
     view.setColor(QColor("#000000"));
 
     PodcastEngine engine;
