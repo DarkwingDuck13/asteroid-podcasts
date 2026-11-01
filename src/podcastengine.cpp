@@ -21,6 +21,8 @@
 #include <QDateTime>
 #include <cmath>
 #include <QDebug>
+#include <QDBusConnection>
+#include <QDBusMessage>
 
 PodcastEngine::PodcastEngine(QObject *parent) : QObject(parent) {
     m_net = new QNetworkAccessManager(this);
@@ -53,22 +55,30 @@ PodcastEngine::~PodcastEngine() {
     releaseWakeLock();
 }
 
+// Ask mce (AsteroidOS power manager) to keep the CPU awake while audio plays.
+// Must come from this process's own D-Bus connection: mce ties the request to
+// the caller's bus name, so a detached dbus-send would release immediately.
+static void mceRequest(const char *method) {
+    QDBusMessage m = QDBusMessage::createMethodCall(
+        "com.nokia.mce", "/com/nokia/mce/request",
+        "com.nokia.mce.request", method);
+    QDBusConnection::systemBus().send(m);
+}
+
 void PodcastEngine::acquireWakeLock() {
-    QFile file("/sys/power/wake_lock");
-    if (file.open(QIODevice::WriteOnly)) {
-        file.write("asteroid-podcasts");
-        file.close();
+    if (!m_keepaliveTimer) {
+        m_keepaliveTimer = new QTimer(this);
+        m_keepaliveTimer->setInterval(30000); // renew before mce expires it
+        connect(m_keepaliveTimer, &QTimer::timeout, this,
+                []() { mceRequest("req_cpu_keepalive_start"); });
     }
-    QProcess::startDetached("sh", QStringList() << "-c" << "echo asteroid-podcasts > /sys/power/wake_lock 2>/dev/null; dbus-send --system --type=method_call --dest=com.nokia.mce /com/nokia/mce/request com.nokia.mce.request.req_display_blanking_pause 2>/dev/null || true");
+    mceRequest("req_cpu_keepalive_start");
+    m_keepaliveTimer->start();
 }
 
 void PodcastEngine::releaseWakeLock() {
-    QFile file("/sys/power/wake_unlock");
-    if (file.open(QIODevice::WriteOnly)) {
-        file.write("asteroid-podcasts");
-        file.close();
-    }
-    QProcess::startDetached("sh", QStringList() << "-c" << "echo asteroid-podcasts > /sys/power/wake_unlock 2>/dev/null || true");
+    if (m_keepaliveTimer) m_keepaliveTimer->stop();
+    mceRequest("req_cpu_keepalive_stop");
 }
 
 void PodcastEngine::onPlaybackStateChanged(QMediaPlayer::PlaybackState state) {

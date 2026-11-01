@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Network Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Network Multimedia DBus)
 
 set(SOURCES
     src/main.cpp
@@ -24,6 +24,7 @@ target_link_libraries(asteroid-podcasts PRIVATE
     Qt6::Quick
     Qt6::Network
     Qt6::Multimedia
+    Qt6::DBus
 )
 
 install(TARGETS asteroid-podcasts RUNTIME DESTINATION bin)

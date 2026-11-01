@@ -116,6 +116,7 @@ private:
     QMediaPlayer *m_player;
     QAudioOutput *m_audioOutput;
     QTimer *m_saveTimer;
+    QTimer *m_keepaliveTimer = nullptr;
     QProcess *m_levelProc = nullptr;
 
     QVariantList m_subscriptions;
