@@ -951,6 +951,8 @@ Item {
     RadialKeyboard {
         id: radialOsk
         anchors.fill: parent
+        background: Component { FacetedBackground { anchors.fill: parent } }
+        onHaptic: function(ms) { engine.buzz(ms) }
         onAccepted: function(queryText) {
             if (queryText.trim().length > 0) {
                 engine.search(queryText.trim());

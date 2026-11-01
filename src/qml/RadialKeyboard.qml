@@ -8,6 +8,24 @@
  * =====================================================================
  */
 
+/*
+ * RadialKeyboard: a self-contained rotary on-screen keyboard for round watch
+ * displays. It has no dependency on any app: copy this one file into a project.
+ *
+ *   RadialKeyboard {
+ *       id: osk
+ *       anchors.fill: parent                  // any size; the dial scales to fit
+ *       onAccepted: function(t) { ... }       // user pressed the check mark
+ *       onHaptic: function(ms) { ... }        // optional: buzz the vibrator
+ *       background: Component { ... }         // optional: custom backdrop
+ *   }
+ *   osk.open("initial text")                  // show it
+ *
+ * Properties: text (current text), background (Component).
+ * Signals:    accepted(string resultText), canceled(), haptic(int ms).
+ * Functions:  open(initialText), close().
+ */
+
 import QtQuick
 import QtQuick.Controls
 
@@ -23,8 +41,13 @@ Item {
     property int selectedIndex: 0
     property string selectedChar: ""
 
+    // Backdrop drawn behind the dial. Override to restyle without editing this file.
+    property Component background: Rectangle { color: "#000000" }
+
     signal accepted(string resultText)
     signal canceled()
+    // Emitted when the keyboard wants vibration feedback; the host decides how.
+    signal haptic(int ms)
 
     function open(initialText) {
         text = initialText || "";
@@ -38,9 +61,7 @@ Item {
     }
 
     function hapticPulse(ms) {
-        if (typeof engine !== "undefined" && engine.buzz) {
-            engine.buzz(ms || 30);
-        }
+        haptic(ms || 30);
     }
 
     readonly property var bankNames: ["CAPITALS", "LOWERCASE", "NUMBERS", "SYMBOLS"]
@@ -55,12 +76,24 @@ Item {
         return charBanks[currentMode + 1];
     }
 
-    FacetedBackground { anchors.fill: parent }
+    Loader {
+        anchors.fill: parent
+        sourceComponent: keyboardRoot.background
+    }
 
     Rectangle {
         anchors.fill: parent
         color: "#bf000000"
     }
+
+    // The dial is laid out on a fixed 400x400 canvas and scaled to fit the
+    // available space, so it works on any watch screen size.
+    Item {
+    id: stage
+    anchors.centerIn: parent
+    width: 400
+    height: 400
+    scale: Math.min(keyboardRoot.width, keyboardRoot.height) / 400
 
     // ==========================================
     // 1. TOP TARGET APERTURE (12:00 INDICATOR)
@@ -366,5 +399,6 @@ Item {
                 }
             }
         }
+    }
     }
 }
